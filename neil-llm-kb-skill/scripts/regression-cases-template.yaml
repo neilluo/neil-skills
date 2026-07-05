@@ -1,0 +1,160 @@
+# LLM Wiki KB — 回归测试用例模板
+#
+# 用法：
+#   1. 复制本文件到目标知识库的 tests/regression-cases.yaml
+#   2. 根据知识库内容修改/添加用例
+#   3. 运行：python3 scripts/regression-template.py --kb-dir /path/to/kb
+#
+# 每个用例由以下字段组成：
+#   - id: 唯一标识（建议格式：domain-sequence）
+#   - title: 用例描述（可读性优先）
+#   - mode: 用例类型（entity | concept | guide | comparison | cross-ref）
+#   - keywords: 关键词列表（子串匹配，大小写不敏感）
+#
+# 通过阈值：keyword 命中率 >= threshold 即为 PASS
+# 建议：初始设置 0.80，知识库成熟后逐步提升到 0.90+
+
+threshold: 0.85
+
+cases:
+  # ============================================================
+  # Entity 用例 — 验证核心实体页是否存在且覆盖关键属性
+  # ============================================================
+  - id: entity-001
+    title: "核心工具/服务实体覆盖"
+    mode: entity
+    keywords:
+      - "REPLACE_WITH_ENTITY_NAME"
+      - "REPLACE_WITH_KEY_CAPABILITY"
+      - "REPLACE_WITH_USAGE_SCENARIO"
+      - "REPLACE_WITH_LIMITATION"
+
+  - id: entity-002
+    title: "第二个核心实体覆盖"
+    mode: entity
+    keywords:
+      - "REPLACE_ENTITY_2_NAME"
+      - "REPLACE_ENTITY_2_FEATURE"
+
+  # ============================================================
+  # Concept 用例 — 验证核心概念是否被正确蒸馏
+  # ============================================================
+  - id: concept-001
+    title: "核心概念定义与原理"
+    mode: concept
+    keywords:
+      - "REPLACE_WITH_CONCEPT_NAME"
+      - "REPLACE_WITH_DEFINITION_KEYWORD"
+      - "REPLACE_WITH_PRINCIPLE"
+      - "REPLACE_WITH_TRADEOFF"
+
+  - id: concept-002
+    title: "第二个核心概念"
+    mode: concept
+    keywords:
+      - "REPLACE_CONCEPT_2_NAME"
+      - "REPLACE_CONCEPT_2_KEY_INSIGHT"
+
+  # ============================================================
+  # Guide 用例 — 验证操作指南是否包含关键步骤
+  # ============================================================
+  - id: guide-001
+    title: "关键操作指南步骤覆盖"
+    mode: guide
+    keywords:
+      - "REPLACE_WITH_STEP_1_KEYWORD"
+      - "REPLACE_WITH_STEP_2_KEYWORD"
+      - "REPLACE_WITH_PREREQUISITE"
+      - "REPLACE_WITH_VERIFICATION_METHOD"
+
+  # ============================================================
+  # Comparison 用例 — 验证对比分析是否公平完整
+  # ============================================================
+  - id: comparison-001
+    title: "方案对比覆盖度"
+    mode: comparison
+    keywords:
+      - "REPLACE_WITH_OPTION_A"
+      - "REPLACE_WITH_OPTION_B"
+      - "REPLACE_WITH_COMPARISON_DIMENSION"
+      - "REPLACE_WITH_RECOMMENDATION"
+
+  # ============================================================
+  # Cross-Reference 用例 — 验证交叉引用网络完整性
+  # ============================================================
+  - id: crossref-001
+    title: "交叉引用连通性"
+    mode: cross-ref
+    keywords:
+      - "[[REPLACE_WITH_LINKED_PAGE_1]]"
+      - "[[REPLACE_WITH_LINKED_PAGE_2]]"
+      - "[[REPLACE_WITH_LINKED_PAGE_3]]"
+
+# ============================================================
+# 填写指南
+# ============================================================
+#
+# 如何选择 keywords：
+#
+# 1. Entity 用例：
+#    - 实体名称（必选）
+#    - 核心能力/特征（选 2-3 个最重要的）
+#    - 适用场景关键词
+#    - 已知限制/边界
+#
+# 2. Concept 用例：
+#    - 概念名称（必选）
+#    - 定义中的关键术语
+#    - 核心原理/机制描述
+#    - 与其他概念的区分点
+#
+# 3. Guide 用例：
+#    - 操作名称或动词
+#    - 各步骤中的关键命令/参数
+#    - 前置条件描述
+#    - 验证/确认方法
+#
+# 4. Comparison 用例：
+#    - 被比较的两方名称（必选）
+#    - 对比维度名称
+#    - 结论性推荐词
+#
+# 5. Cross-Reference 用例：
+#    - 使用 [[page-name]] 格式
+#    - 选择应该存在但容易遗漏的引用
+#    - 验证核心页面间的双向链接
+#
+# ============================================================
+# 示例：以 neil-aliyun-sa 知识库为例
+# ============================================================
+#
+#  - id: entity-ecs
+#    title: "ECS 弹性计算服务实体覆盖"
+#    mode: entity
+#    keywords:
+#      - "ECS"
+#      - "弹性计算"
+#      - "实例规格"
+#      - "按量付费"
+#      - "抢占式实例"
+#      - "vCPU"
+#
+#  - id: concept-well-architected
+#    title: "Well-Architected 框架核心支柱"
+#    mode: concept
+#    keywords:
+#      - "Well-Architected"
+#      - "安全性"
+#      - "可靠性"
+#      - "性能效率"
+#      - "成本优化"
+#      - "卓越运营"
+#
+#  - id: crossref-network
+#    title: "网络产品交叉引用"
+#    mode: cross-ref
+#    keywords:
+#      - "[[vpc]]"
+#      - "[[slb]]"
+#      - "[[cdn]]"
+#      - "[[ecs]]"
