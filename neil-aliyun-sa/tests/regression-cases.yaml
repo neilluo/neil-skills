@@ -1,0 +1,332 @@
+# neil-aliyun-sa 自动化回归用例库
+# 设计原则：每个用例 = (问题语义) + (必须命中的关键词集合 × 期望文件)
+# 命中率 = 命中关键词数 / 总关键词数；阈值 ≥0.85 视为 PASS
+# 维护说明：新增题目时，在 cases 数组追加；关键词应是知识库中独有且强相关的词
+
+version: "1.2"
+threshold: 0.85
+files:
+  knowledge:
+    - knowledge/aliyun-products.md
+    - knowledge/cloud-solutions.md
+    - knowledge/industry-landscape.md
+    - knowledge/ai-trends.md
+    - knowledge/competitor-cloud.md
+    - knowledge/company-profiles.md
+  references:
+    - references/architecture-templates.md
+    - references/migration-methodology.md
+    - references/bigdata-migration.md
+    - references/well-architected.md
+    - references/caf-landing-zone.md
+    - references/cloud-product-mapping.md
+    - references/customer-playbook.md
+
+cases:
+  - id: T01
+    mode: F
+    title: "Tair vs 自建 Redis 30 秒判断"
+    keywords:
+      - "Tair"
+      - "持久内存"
+      - "ElastiCache"
+      - "三种形态"
+    weight: 1
+
+  - id: T02
+    mode: C
+    title: "Qwen-Plus vs Qwen-Turbo 选型"
+    keywords:
+      - "Qwen-Plus"
+      - "Qwen-Turbo"
+      - "百炼"
+      - "限流"
+    weight: 1
+
+  - id: T03
+    mode: C
+    title: "视频点播平台存储+分发选型"
+    keywords:
+      - "VoD"
+      - "视频点播"
+      - "MPS"
+      - "Live"
+      - "RTC"
+      - "S6"
+      - "DRM"
+      - "HLS"
+    weight: 2
+
+  - id: T04
+    mode: B
+    title: "零售连锁全渠道数据中台"
+    keywords:
+      - "零售"
+      - "全渠道"
+      - "S8"
+      - "Quick BI"
+      - "SAG"
+      - "CDP"
+      - "RFM"
+      - "门店"
+    weight: 2
+
+  - id: T05
+    mode: B
+    title: "SaaS 多租户架构"
+    keywords:
+      - "SaaS"
+      - "多租户"
+      - "S9"
+      - "Serverless"
+      - "6R"
+      - "Rehost"
+      - "Shared-DB"
+    weight: 2
+
+  - id: T06
+    mode: E
+    title: "阿里云 vs 火山引擎 AI MaaS"
+    keywords:
+      - "火山引擎"
+      - "Coze"
+      - "扣子"
+      - "Doubao"
+      - "Ark"
+      - "百炼 Agent"
+      - "Winback"
+    weight: 2
+
+  - id: T07
+    mode: D
+    title: "教育行业上云特征"
+    keywords:
+      - "教育"
+      - "在线教育"
+      - "K12"
+      - "未成年人保护"
+      - "RTC"
+      - "口语评测"
+    weight: 2
+
+  - id: T08
+    mode: B
+    title: "车联网 5000 万设备接入"
+    keywords:
+      - "车联网"
+      - "IoT Platform"
+      - "S7"
+      - "MQTT"
+      - "Lindorm"
+      - "汽车数据安全"
+      - "T-Box"
+    weight: 2
+
+  - id: T09
+    mode: C
+    title: "MaxCompute vs EMR Spark 选型"
+    keywords:
+      - "MaxCompute"
+      - "EMR"
+      - "Paimon"
+      - "Serverless Spark"
+      - "Hudi"
+    weight: 1
+
+  - id: T10
+    mode: F
+    title: "ALB vs MSE 网关 vs API Gateway"
+    keywords:
+      - "API Gateway"
+      - "MSE"
+      - "ALB"
+      - "云原生网关"
+      - "API 网关"
+    weight: 1
+
+  # === 大数据迁云专项（BD01-BD08）===
+
+  - id: BD01
+    mode: B
+    title: "自建 Hadoop/Hive 500节点迁 MaxCompute+EMR"
+    keywords:
+      - "MaxCompute"
+      - "EMR"
+      - "DataWorks"
+      - "DLF"
+      - "6R"
+      - "Replatform"
+      - "波次"
+    weight: 2
+
+  - id: BD02
+    mode: C
+    title: "HDFS 500TB 迁 OSS 选型"
+    keywords:
+      - "闪电立方"
+      - "ossutil"
+      - "OSS Migration"
+      - "生命周期"
+      - "OSS-HDFS"
+    weight: 2
+
+  - id: BD03
+    mode: B
+    title: "自建 Kafka 迁云 + Flink 实时链路"
+    keywords:
+      - "Kafka"
+      - "Flink"
+      - "Paimon"
+      - "Hologres"
+      - "Connector"
+    weight: 2
+
+  - id: BD04
+    mode: F
+    title: "30秒 EMR vs MaxCompute vs Hologres"
+    keywords:
+      - "EMR"
+      - "MaxCompute"
+      - "Hologres"
+      - "离线"
+      - "实时"
+      - "开源"
+    weight: 1
+
+  - id: BD05
+    mode: B
+    title: "Oracle 数仓 50TB 迁 MaxCompute"
+    keywords:
+      - "Oracle"
+      - "ADAM"
+      - "MaxCompute"
+      - "DTS"
+      - "PL/SQL"
+    weight: 2
+
+  - id: BD06
+    mode: B
+    title: "CDH/HDP EOL 迁 EMR"
+    keywords:
+      - "CDH"
+      - "EMR"
+      - "Hadoop"
+      - "Spark"
+      - "Hive"
+      - "StarRocks"
+    weight: 2
+
+  - id: BD07
+    mode: C
+    title: "DataWorks vs Airflow/DolphinScheduler"
+    keywords:
+      - "DataWorks"
+      - "调度"
+      - "DAG"
+      - "血缘"
+      - "数据质量"
+    weight: 2
+
+  - id: BD08
+    mode: B
+    title: "Spark Streaming→Flink+Paimon+Hologres 实时升级"
+    keywords:
+      - "Flink CDC"
+      - "Paimon"
+      - "Hologres"
+      - "Dynamic Table"
+      - "ODS"
+      - "DWD"
+    weight: 2
+
+  # --- v1.2 新增用例（安全/Landing Zone/迁移/AI Agent/AIGC）---
+
+  - id: S01
+    mode: C
+    title: "WAF 3.0 版本选型（基础/高级/企业/旗舰）"
+    keywords:
+      - "WAF"
+      - "3,880"
+      - "9,800"
+      - "Bot"
+      - "QPS"
+      - "按量付费"
+    weight: 2
+
+  - id: S02
+    mode: B
+    title: "企业安全合规方案（等保/DDoS/WAF/云安全中心）"
+    keywords:
+      - "WAF"
+      - "Anti-DDoS"
+      - "云安全中心"
+      - "等保"
+      - "纵深防御"
+    weight: 2
+
+  - id: LZ01
+    mode: B
+    title: "Landing Zone 多账号管理架构"
+    keywords:
+      - "Landing Zone"
+      - "CAF"
+      - "资源目录"
+      - "管理账号"
+      - "Control Policy"
+    weight: 2
+
+  - id: MG01
+    mode: B
+    title: "IDC 迁云 6R 决策 + 数据迁移工具链"
+    keywords:
+      - "6R"
+      - "Rehost"
+      - "Replatform"
+      - "DTS"
+      - "闪电立方"
+    weight: 2
+
+  - id: MG02
+    mode: C
+    title: "迁移方法论四阶段选型"
+    keywords:
+      - "Assess"
+      - "Plan"
+      - "Migrate"
+      - "Optimize"
+      - "TCO"
+    weight: 2
+
+  - id: AI01
+    mode: B
+    title: "企业 AI Agent 平台方案（百炼+RAG+多Agent）"
+    keywords:
+      - "百炼"
+      - "Agent"
+      - "RAG"
+      - "MCP"
+      - "Multi-Agent"
+      - "Workflow"
+    weight: 2
+
+  - id: AI02
+    mode: C
+    title: "AIGC 内容生产选型（万相/HappyHorse/CosyVoice）"
+    keywords:
+      - "万相"
+      - "happyhorse"
+      - "CosyVoice"
+      - "文生图"
+      - "文生视频"
+    weight: 2
+
+  - id: AI03
+    mode: F
+    title: "百炼 vs PAI-EAS 成本交叉点 30秒判断"
+    keywords:
+      - "百炼"
+      - "PAI-EAS"
+      - "Token"
+      - "GPU"
+      - "私有部署"
+    weight: 2

@@ -1,0 +1,208 @@
+# Qoder Cloud Agents KB 回归测试用例
+threshold: 0.85
+
+cases:
+  - id: T01
+    title: Agent 配置与版本控制
+    mode: entity
+    keywords:
+      - "agent"
+      - "model"
+      - "system"
+      - "tools"
+      - "version"
+      - "occ"
+      - "409"
+
+  - id: T02
+    title: Session 生命周期
+    mode: entity
+    keywords:
+      - "session"
+      - "idle"
+      - "processing"
+      - "canceling"
+      - "archived"
+      - "environment"
+
+  - id: T03
+    title: SSE 事件流
+    mode: concept
+    keywords:
+      - "event"
+      - "sse"
+      - "user.message"
+      - "agent.message"
+      - "tool_use"
+      - "tool_result"
+
+  - id: T04
+    title: Memory Store 持久记忆
+    mode: entity
+    keywords:
+      - "memory"
+      - "store"
+      - "entry"
+      - "version"
+      - "persist"
+
+  - id: T05
+    title: 权限模型
+    mode: concept
+    keywords:
+      - "permission"
+      - "allow"
+      - "ask"
+      - "deny"
+      - "tool"
+
+  - id: T06
+    title: 多 Agent 协作
+    mode: concept
+    keywords:
+      - "managed"
+      - "coordinator"
+      - "child"
+      - "thread"
+      - "multiagent"
+
+  - id: T07
+    title: 容器沙箱
+    mode: concept
+    keywords:
+      - "container"
+      - "sandbox"
+      - "environment"
+      - "resource"
+
+  - id: T08
+    title: Vault 密钥管理
+    mode: entity
+    keywords:
+      - "vault"
+      - "secret"
+      - "credential"
+
+  - id: T09
+    title: 文件操作
+    mode: entity
+    keywords:
+      - "file"
+      - "upload"
+      - "download"
+
+  - id: T10
+    title: 快速入门与排障
+    mode: guide
+    keywords:
+      - "quickstart"
+      - "troubleshoot"
+      - "production"
+      - "checklist"
+
+  # ===== QoderWake 产品 =====
+
+  - id: T11
+    title: Waker 数字员工
+    mode: entity
+    keywords:
+      - "waker"
+      - "数字员工"
+      - "创建"
+      - "角色"
+      - "控制台"
+      - "19820"
+
+  - id: T12
+    title: 角色模板
+    mode: entity
+    keywords:
+      - "role"
+      - "后端工程师"
+      - "前端工程师"
+      - "测试工程师"
+      - "产品经理"
+      - "自定义"
+
+  - id: T13
+    title: 对话任务
+    mode: concept
+    keywords:
+      - "对话"
+      - "追问"
+      - "审批"
+      - "切换"
+      - "模型"
+      - "产物"
+
+  - id: T14
+    title: 自动触发机制
+    mode: concept
+    keywords:
+      - "定时"
+      - "事件"
+      - "API"
+      - "PAT"
+      - "invoke"
+      - "触发"
+
+  - id: T15
+    title: 群组任务
+    mode: entity
+    keywords:
+      - "群组"
+      - "Leader"
+      - "成员"
+      - "协作"
+      - "拆解"
+      - "汇总"
+
+  - id: T16
+    title: Waker 权限模型
+    mode: concept
+    keywords:
+      - "工具防护"
+      - "文件防护"
+      - "命令注入"
+      - "权限提升"
+      - "审批"
+
+  - id: T17
+    title: Waker 记忆系统
+    mode: concept
+    keywords:
+      - "记忆"
+      - "自动沉淀"
+      - "手动"
+      - "本地"
+      - "长期"
+
+  - id: T18
+    title: 连接器
+    mode: entity
+    keywords:
+      - "连接器"
+      - "GitHub"
+      - "Jira"
+      - "外部"
+
+  - id: T19
+    title: QoderWake 安装部署
+    mode: guide
+    keywords:
+      - "安装"
+      - "macOS"
+      - "Linux"
+      - "curl"
+      - "install.sh"
+
+  - id: T20
+    title: Cloud Agents vs QoderWake 选型
+    mode: comparison
+    keywords:
+      - "cloud"
+      - "本地"
+      - "waker"
+      - "session"
+      - "API"
+      - "GUI"
