@@ -3,7 +3,7 @@
 # 命中率 = 命中关键词数 / 总关键词数；阈值 ≥0.85 视为 PASS
 # 维护说明：新增题目时，在 cases 数组追加；关键词应是知识库中独有且强相关的词
 
-version: "1.2"
+version: "1.4"
 threshold: 0.85
 files:
   knowledge:
@@ -142,6 +142,11 @@ cases:
       - "ALB"
       - "云原生网关"
       - "API 网关"
+      # v1.3 扩词：原 5 词在旧库即全命中（假绿），补三形态谱系判别词
+      - "云原生API网关"
+      - "AI 网关"
+      - "原 API 网关"
+      - "三种形态"
     weight: 1
 
   # === 大数据迁云专项（BD01-BD08）===
@@ -329,4 +334,88 @@ cases:
       - "Token"
       - "GPU"
       - "私有部署"
+    weight: 2
+
+  # === 云原生API网关 / AI网关 专项（GW01-GW04，2026-09-21 外部认证蒸馏）===
+
+  - id: GW01
+    mode: C
+    title: "AI网关/云原生API网关 外部认证 ext-auth service_name 与 FQDN 命名规则"
+    keywords:
+      - "ext-auth"
+      - "service_name"
+      - "FQDN"
+      - "my-svc.dns"
+      - "svc.cluster.local"
+      - "forward_auth"
+      - "path_prefix"
+      - "外部认证"
+    weight: 2
+
+  - id: GW02
+    mode: F
+    title: "API 网关三种形态产品谱系与原API网关 EOL"
+    keywords:
+      - "云原生 API 网关"
+      - "AI 网关"
+      - "原 API 网关"
+      - "2026-08-23"
+      - "2027-09-21"
+      - "全面下线"
+    weight: 1
+
+  - id: GW03
+    mode: C
+    title: "Serverless 版 AI 网关不支持插件的硬限制与三级作用域"
+    keywords:
+      - "Serverless版不支持"
+      - "专享实例"
+      - "插件市场"
+      - "路由级"
+      - "域名级"
+      - "插件规则"
+    weight: 2
+
+  - id: GW04
+    mode: B
+    title: "网关外部认证 A路(全局认证鉴权) vs B路(ext-auth) 选型与超时单位陷阱"
+    keywords:
+      - "全局认证鉴权"
+      - "自建的鉴权服务"
+      - "鉴权API"
+      - "x-mse-external-authz-check-result"
+      - "endpoint_mode"
+      - "failure_mode_allow"
+      - "status_on_error"
+      - "宽松模式"
+      - "S10"
+    weight: 2
+
+  # === 收口补充专项（GW05-GW06，2026-09-21 MCP 维度 + 火山对标）===
+
+  - id: GW05
+    mode: C
+    title: "MCP 鉴权：tools/list 能否鉴权 / 传输层鉴权 / 消费者认证 / HTTP转MCP / forward_auth"
+    keywords:
+      - "tools/list"
+      - "initialize"
+      - "Streamable HTTP"
+      - "单一 MCP endpoint"
+      - "消费者认证"
+      - "HTTP转MCP"
+      - "forward_auth"
+      - "X-Forwarded-Uri"
+      - "传输层鉴权"
+    weight: 2
+
+  - id: GW06
+    mode: E
+    title: "火山引擎 API 网关外部认证对标（Envoy 内核 / 仅实例级 / 同私有网络 / 精确匹配 / GET或POST / 邀测）"
+    keywords:
+      - "采用 Envoy 内核"
+      - "仅支持在实例级别生效"
+      - "相同私有网络"
+      - "精确匹配"
+      - "GET 或 POST"
+      - "邀测"
     weight: 2

@@ -20,7 +20,7 @@
 | 腾讯云 | 中国 #2 | 主战场 | 游戏、社交、TDSQL、金融 | 部分蒸馏 |
 | 华为云 | 中国 #3 | 主战场 + 信创 | 政企信创、GaussDB、鲲鹏 | 部分蒸馏 |
 | 百度智能云 | 中国 | AI 强 | 文心、千帆 | 待蒸馏 |
-| 火山引擎 | 中国 | 抖音生态 + AI | 大模型推理、视频 | 待蒸馏 |
+| 火山引擎 | 中国 | 抖音生态 + AI | 大模型推理、视频、API 网关/MCP | 部分蒸馏（模型层 + 网关/MCP 对标） |
 
 ## 中国云市场格局 (2024) [官方-IDC/艾瑞]
 
@@ -513,10 +513,51 @@
 
 ---
 
+## 火山引擎 API 网关 / AI 网关（MCP + 外部认证）对标 [官方-竞品]（2026-09-21 收口补充）
+
+> 来源：火山引擎文档站 4 篇全文（经 getDocDetail API 取 MDContent，归档 raw/competitor/competitor-2026-09-21-volc-apig-*.md）：MCP 服务（docs/6569/1816086，更新 2026-07-21）、外部认证鉴权（docs/6569/1798159，更新 2026-08-10）、安全与认证概述（docs/6569/2502428）、什么是 API 网关（docs/6569/82992）。产品路径：火山引擎 **API 网关 → AI 网关 → MCP 服务**，控制台 `console.volcengine.com/veapig`。
+> 阿里云侧对位 → [aliyun-products.md 云原生 API 网关（APIG）/ AI 网关深度卡](aliyun-products.md#云原生-api-网关apig--ai-网关深度卡)（MCP 维度节）；方案侧 → [cloud-solutions.md S10](cloud-solutions.md)。
+
+### MCP 服务能力对位
+
+| 维度 | 火山引擎 API 网关 | 阿里云 AI 网关 |
+| --- | --- | --- |
+| MCP 服务类型 | **HTTP 转 MCP** / 直接访问 MCP | HTTP 转 MCP / 直接代理 / Nacos 托管（同构） |
+| 传输协议限制 | 「HTTP 转换为 MCP 时，**仅支持通过 Streamable HTTP 协议**访问网关」 | 同构事实（Streamable HTTP） |
+| 工具来源 | MCP Tools 由 **Swagger/OpenAPI3 上传生成** | Swagger/OpenAPI3 导入或自定义 YAML（存放网关侧） |
+| MCP 自带鉴权 | 「开启**身份认证**」= **Key Auth 插件**（API Key），**不是外部认证** | 消费者认证（MCP 服务级/工具级，API Key） |
+| 成熟度信号 | — | 「什么是 AI 网关」文档明写**【邀测·申请试用】需联系客户经理** → 并非全面领先 [官方-竞品] |
+
+### 外部认证鉴权插件对位（谈判核心表）
+
+| 维度 | 火山「外部认证鉴权」插件 [官方-竞品] | 阿里云（自建鉴权 A 路 / ext-auth B 路） |
+| --- | --- | --- |
+| 生效级别 | 🔴 **仅实例级**（「自建认证鉴权当前仅支持在实例级别生效」） | A 路=实例级入口+黑白名单表达；**B 路 ext-auth=路由级/域名级/实例级三级**（我方更强） |
+| 认证位置 | 可配 header（例 `Authorization`） | A 路 Token位置可配；B 路自动透传 Authorization |
+| 认证地址路径 | **自由路径**（例 `/`） | 🔴 A 路**强制前缀+拼接**（官方原文：「鉴权API…API的Path需是前缀匹配」「真实Path是鉴权API加上原始业务请求的Path后的结果，即/validateToken/order」，甚至给了 SpringMVC `@RequestMapping("/check/")` 的例子）；B 路 forward_auth 可固定路径（**真实差距**，如实记录） |
+| 认证 HTTP Method | **可选 GET 或 POST** | A 路控制台**无此配置项**（真实差距）；B 路 forward_auth `request_method` 可配 |
+| 后端类型 | 容器/ECS/函数/**固定 IP** | DNS域名/固定地址/ACK/Nacos（固定 IP 裸填会 `bad argument`，须注册为服务） |
+| 匹配规则 | 黑/白名单，路径**前缀匹配 或 精确匹配** | 🔴 阿里云更强：精确/前缀/**正则** + Header 多条件（9 种操作符）+ **Envoy permission 复杂条件（YAML 与/或/非）**（谈判别丢这张牌） |
+| 原始请求信息传递 | 「客户端的 `Host`、`Method`、`Path` 和 `Content-Length` 请求头会默认添加至鉴权请求报文中」（原始 Path **走 header 传递**） | A 路同构（Host/Method/Path/Content-Length 默认自动添加）；B 路 forward_auth 走 `X-Forwarded-*` |
+| 其他能力 | 转发请求头/添加请求头/隐藏凭证/降级模式/忽略预检/重新路由 | A 路头部回填/宽松严格模式；B 路 headers_to_add/allowed_upstream_headers/failure_mode_allow |
+| 网络约束 | 🔴 「自建认证鉴权服务所在的云资源（VKE/ECS 等）**必须与 API 网关实例在相同私有网络**」→ **若客户认证接口是公网域名，同 VPC 要求可能直接卡死**（我方反击点） | 外网地址配 NAT 网关即可；无同 VPC 硬约束（DNS 来源） |
+| 认证方式定位 | 外部认证 = 自定义 Token、实例级别、安全级别高、适用「已有自建认证体系」（安全与认证概述） | 同定位（A/B 两路） |
+
+### 技术底座同源结论 [官方-竞品+官方]
+
+双方都是 **Envoy 系**：火山流量网关「**采用 Envoy 内核**，兼容 Kubernetes Ingress 标准」（什么是 API 网关，docs/6569/82992）；阿里云 Higress 系，且阿里云文档直接引用「Envoy 官方文档」的 permission 结构、暴露 `x-mse-external-authz-check-result` 头，Higress ext-auth 文档明写「参考了 Envoy 原生的 **ext_authz filter**」（执行阶段=认证阶段，优先级 360）→ **所以外部认证的差异是实现选择差异，不是平台代差**——售前遇到「火山也有外部认证」时按此定调，再打上表两 🔴 反击点（三级作用域 vs 仅实例级；同 VPC 硬约束）与授权规则表达力（正则/Header 多条件/Envoy permission YAML）。
+
+### 🔴 火山文档站取数陷阱（供后续复用）
+
+无软 200 陷阱，但正文是 **SPA**——直接 curl HTML 只得约 11KB JS 壳（`You need to enable JavaScript`）。真内容必须走 `https://www.volcengine.com/api/doc/getDocDetail?LibraryCode=<lib>&DocumentCode=<doc>` 取 `Result.MDContent`；目录树走 `api/doc/getDocList?LibraryCode=APIGateway`（234 篇）。注意 `DocumentCode` 是**英文 slug**（如 `MCPservice`/`Externalauthenticationandauthorization`），填 URL 里的数字 ID（如 1816086）会报 `record not found`；缺参会明确报 `ParameterMissing`，可据报错判真伪。
+
+---
+
 ## 待蒸馏种子
 
 - [x] ATA：Lambda → FC 跨云迁移案例（已蒸馏）
 - [x] 火山引擎/Coze 深度对比（已蒸馏）
+- [x] 火山引擎 API 网关/AI 网关（MCP + 外部认证）对标（2026-09-21 已蒸馏，raw/competitor/ 4 篇）
 - [ ] ATA：莉莉丝 AWS Winback（出海游戏跨云迁移）
 - [ ] 各厂商 AI MaaS 定价对比（百炼 vs Bedrock vs Azure OpenAI）
 - [ ] 数据库迁移工具链（DTS vs AWS DMS 详细对比）

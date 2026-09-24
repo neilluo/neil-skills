@@ -19,7 +19,8 @@ raw/
 ├── customer-cases/    # 客户案例原始资料
 ├── industry-reports/  # 行业报告、白皮书
 ├── competitor/        # 竞品云白皮书、公开资料
-└── misc/              # 其他（会议纪要、内部邮件等）
+├── standards/         # 开放标准/协议规范原文（2026-09-21 新建：MCP 官方规范 authorization/transports 多版本）
+└── misc/              # 其他（会议纪要、内部邮件等；含开源代码摘录，头部注明「摘录而非全文」）
 ```
 
 ## 命名约定

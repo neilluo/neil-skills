@@ -11,7 +11,7 @@
 - AI 产品演进 → [ai-trends.md](ai-trends.md)(百炼/PAI/通义变化趋势)
 - 选型矩阵 → [../references/cloud-product-mapping.md](../references/cloud-product-mapping.md)(场景反查产品)
 
-**[[wikilink]] 实体索引**：本文件核心实体 → [[ECS]] [[ACK]] [[ACS]] [[FC]] [[PolarDB]] [[RDS]] [[Tair]] [[Hologres]] [[MaxCompute]] [[百炼]] [[PAI]] [[MSE]] [[RocketMQ]] [[Kafka]] [[WAF]] [[SLB]] [[OSS]] [[CDN]] [[Flink]] [[DataWorks]] [[StarRocks]]
+**[[wikilink]] 实体索引**：本文件核心实体 → [[ECS]] [[ACK]] [[ACS]] [[FC]] [[PolarDB]] [[RDS]] [[Tair]] [[Hologres]] [[MaxCompute]] [[百炼]] [[PAI]] [[MSE]] [[RocketMQ]] [[Kafka]] [[WAF]] [[SLB]] [[OSS]] [[CDN]] [[Flink]] [[DataWorks]] [[StarRocks]] [[云原生API网关]] [[AI网关]] [[ext-auth]]
 
 ---
 
@@ -1023,7 +1023,7 @@ NoSQL？
 **能做**：
 - **Nacos 注册配置中心**（托管 Nacos 集群，四版本：开发版/专业版/企业版/Serverless）
 - **ZooKeeper**：托管 ZK 集群
-- **云原生网关**：API 网关（统一入口/限流/鉴权/路由/协议转换）
+- **云原生网关**（MSE 产品线内的网关形态，文档在 help.aliyun.com/zh/mse/ 下）：API 网关（统一入口/限流/鉴权/路由/协议转换）。⚠️ 名称消歧（2026-09-21）：现在主推的「**云原生API网关**」属于 **API 网关（APIG）产品线**（与 AI 网关、原API网关并列三种形态），不是 MSE 的子功能 → 详见下方 [云原生 API 网关（APIG）/ AI 网关 深度卡](#云原生-api-网关apig--ai-网关深度卡)。MSE 侧网关文档线（认证插件清单含 edas-service-auth）与 APIG 线独立维护 [官方]；两者的承接/迁移关系官方未说明
 - **Sentinel**：流量治理（限流/熔断/降级/热点防护）
 - **服务治理**：无侵入式（Agent）全链路灰度、标签路由
 - **AI/Agent 生态**（企业版 Nacos 3.x）：MCP Registry、A2A Registry、AI 安全护栏
@@ -1707,18 +1707,480 @@ CI/CD 制品 → ACR（镜像）+ 云效/Jenkins（流水线）
 
 ---
 
-### API Gateway（API 网关）
+### 云原生 API 网关（APIG）/ AI 网关【深度卡】
+
+> 2026-09-21 蒸馏 16 篇官方/开源文档（raw/aliyun-docs/aliyun-docs-2026-09-21-*，共 188KB），专项补齐「网关外部认证（接客户自建鉴权服务）」与产品谱系消歧。与下方 [原 API Gateway（传统版）卡](#api-gateway原-api-网关--传统版--apigateway) 并列，新项目一律看本卡。
+
+**官方定位**：基于 Envoy 内核和开源 Higress，将流量网关、微服务网关、K8s Ingress 三合一；提供 REST API/HTTP API/WebSocket API 全生命周期管理、Nginx Ingress 兼容与迁移、限流降级、JWT/OIDC/mTLS 认证鉴权、插件市场、日志投递与链路追踪，支持专享实例和 Serverless 实例，SLA 99.99% [官方]（help.aliyun.com/zh/api-gateway/llms.txt 子产品行）。
+
+#### 产品谱系：三种形态 [官方]
+
+llms.txt 第 3 行逐字：「**API 网关（API Gateway）提供云原生 API 网关、AI 网关和原 API 网关三种形态**，涵盖路由转发、流量治理、协议转换、鉴权认证等核心能力。」
+
+| 形态 | 产品线/文档路径 | 定位 | 状态（截至 2026-09-21） |
+| --- | --- | --- | --- |
+| 云原生 API 网关（apig） | help.aliyun.com/zh/api-gateway/cloud-native-api-gateway/ | Envoy+Higress 内核，流量/微服务/Ingress 三合一；专享实例 + Serverless 实例 | 在售主推 |
+| AI 网关（aigw） | help.aliyun.com/zh/api-gateway/ai-gateway/ | 云原生 API 网关**面向 AI 原生应用的托管入口**（同一产品的 AI 实例形态）；专享实例 + Serverless 实例 | 在售主推 |
+| 原 API 网关（传统版 / apigateway） | help.aliyun.com/zh/api-gateway/traditional-api-gateway/ | RESTful/SOAP 接口托管 + SDK 自动生成 | **2026-08-23 停止新购、2027-09-21 全面下线**，存量实例迁移至云原生 API 网关 |
+
+- llms.txt 第 41 行逐字：「原 API 网关（传统版）……产品将于 **2026 年 8 月 23 日停止新购、2027 年 9 月 21 日全面下线，存量实例请迁移至云原生 API 网关**」[官方]
+- ⚠️ **截至 2026-09-21，原 API 网关已过停止新购日期**（2026-08-23 已过）[推断：由官方日期与当前日期对比得出]
+- 名称消歧：MSE 产品线内另有「MSE 云原生网关」文档线（认证插件清单含 edas-service-auth，help.aliyun.com/zh/mse/user-guide/authentication-authentication）[官方]，与 APIG 产品线的「云原生API网关」是两套文档目录；两者的承接/迁移关系**官方未说明**。
+
+#### AI 网关定位与两种规格 [官方]
+
+llms.txt 第 40 行逐字：「**AI 网关是云原生 API 网关面向 AI 原生应用的托管入口**，统一代理百炼/OpenAI/MiniMax/Anthropic/Amazon Bedrock/Azure 及 Ollama/vLLM/SGLang 自建模型，兼容 OpenAI 协议；支持 Model API/Agent API/MCP Server 三类接入，覆盖多模型路由、按比例灰度、HTTP to MCP 转换、A2A 协议转换、消费者 API-Key/JWT/HMAC 鉴权、KMS 凭证托管、Token 限流、Fallback、语义缓存、AI 安全护栏（内容合规/提示词攻击/敏感数据/恶意文件/水印）与全链路可观测；**提供专享实例与 Serverless 实例，按实例规格或 AI Credits 计费**。」
+
+- **不是**百炼/DashScope 的模型网关：它是网关产品（APIG）的一种实例形态，作为 AI 应用的统一入口**代理**百炼等 17+ 家模型供应商（含自建 Ollama/vLLM/SGLang），模型能力本身由供应商提供（创建 AI 服务时官方明确「本AI服务所提供的大模型能力并非由AI网关直接提供」）[官方]
+- 能力清单（从上行提炼）：①Model API / Agent API / MCP Server 三类接入；②多模型路由 + 按比例灰度；③HTTP to MCP 转换；④A2A 协议转换；⑤消费者鉴权（API-Key/JWT/HMAC）；⑥KMS 凭证托管；⑦Token 限流；⑧Fallback；⑨语义缓存；⑩AI 安全护栏；⑪全链路可观测 [官方]
+- **专享实例**：独占物理资源，适合性能/隔离性要求高的场景；**支持安装与启用插件** [官方]
+- **Serverless 实例**：新版公测 2026-08-31 结束、2026-09-01 起商业化计费（存量自动转商业化，不用的实例须在 9-1 前删除）；**不支持安装插件**（见避坑 🔴）[官方]
+
+#### 能力边界
+
+**擅长**：
+- 统一入口三合一（流量网关 + 微服务网关 + K8s Ingress），Nginx Ingress 兼容迁移
+- 微服务/AI 双场景路由：REST/HTTP/WebSocket API 全生命周期、多模型路由、MCP Server 托管
+- 认证鉴权体系：JWT/OIDC/mTLS、消费者认证（API-Key/JWT/HMAC）、**自建鉴权服务对接（全局认证鉴权）**、Higress WASM 插件生态（key-auth/basic-auth/hmac-auth/jwt-auth/oauth/jwt-logout 等平台插件）
+- AI 增强：Token 限流、语义缓存、Fallback、AI 安全护栏、按比例灰度
+- 插件扩展：官方插件（Higress 官方开放到插件市场的插件）/ 社区插件（Higress 社区贡献）/ 自定义插件（用户上传 WASM，Go 1.24 编译需网关 ≥2.1.5），插件规则支持路由级/域名级/实例级三级作用域 [官方]
+
+**不擅长**：
+- L4 纯负载均衡（→ NLB）；七层简单转发不需要 API 管理时（→ ALB）
+- 模型推理本身（→ 百炼/PAI-EAS）；Agent 编排（→ 百炼 ADK）
+- Dubbo/HSF 深度服务治理与注册发现（→ MSE Nacos/Sentinel；自建鉴权服务的鉴权协议也仅支持 HTTP，不支持 Dubbo）
+- Serverless 版 AI 网关的插件扩展（官方硬限制，装不了插件）
+- 传统 RESTful/SOAP API 托管 + SDK 自动生成（原 API 网关的能力面，但该产品已停止新购）
+
+#### 网关外部认证的两条路（本次蒸馏核心）
+
+客户已有自建认证/鉴权服务（自定义 Token 格式，非 JWT 可本地验签），要在网关入口统一鉴权，有 A/B 两条路。**两条路的前置步骤相同：先把认证服务注册为网关「服务」**。
+
+##### 前置步骤：创建服务 / 服务来源 [官方]
+
+- 入口：控制台 → 实例 → 左侧「服务」→「创建服务」，选择服务来源；若服务在 ACK/Nacos 中，需先在「服务 → 来源」页签「创建来源」
+- 服务来源类型与关键参数：
+
+| 服务来源 | 关键参数/约束 | 出处 |
+| --- | --- | --- |
+| DNS 域名 | 服务地址格式 `<DNS域名>:<服务端口>`（AI 网关文档原文），支持多个以英文逗号分隔；**外网地址需配置 NAT 网关**；无需预先配置服务来源 | aigw-creating-services（apig 版 create-service 该栏原文写作 `<后端节点IP>:<服务端口>`，两处表述不一致，DNS 来源建议按 AI 网关文档口径填域名） |
+| 固定地址 | 服务地址格式 `<IP>:<服务端口>`；外网地址需 NAT 网关；无需服务来源 | aigw-creating-services / apig-create-service |
+| 容器服务（ACK/ACS/ACK Serverless） | 需先创建「来源」：**集群版本 ≥1.18（建议 1.28+）**、**必须与网关同 VPC**（跨 VPC 需重建网关实例）、节点池**安全组需开放服务全部端口**；单网关最多关联 3 个 ACK 集群来源 | apig-create-service-source / aigw-creating-services |
+| MSE Nacos | 需先创建「来源」：仅展示 `MCPEnabled = true` 的实例；同 VPC；单网关最多关联 1 个 Nacos 实例 | apig-create-service-source / aigw-creating-services |
+| TLS 模式（DNS/固定地址） | 默认关闭；单向 TLS（HTTPS 访问）；双向 TLS（mTLS） | apig-create-service / aigw-creating-services |
+| 其他来源 | FC 函数计算（仅 3.0）、SAE Kubernetes 服务、云工作流 CloudFlow（网关 ≥2.1.8，仅 apig）、AI 服务（17+ 模型供应商）、Agent 服务（百炼/Dify/自定义，仅 aigw） | 两篇创建服务文档 |
+
+- 服务 FQDN 命名规则（**service_name 的取值形态**，apig 与 aigw 两份 Go 插件文档第 462 行注释逐字相同 [官方]）：
+
+> 「带服务类型的完整 FQDN 名称，例如 `my-svc.dns`, `my-svc.static`, `service-provider.DEFAULT-GROUP.public.nacos`, `httpbin.my-ns.svc.cluster.local`」
+
+| 服务来源类型 | FQDN 命名格式 | 官方/开源原文示例 |
+| --- | --- | --- |
+| DNS 域名 | `<服务名>.dns` | `my-svc.dns` [官方]；`ext-auth.dns` [开源 ext-auth README 第 47 行] |
+| 固定地址（静态IP） | `<服务名>.static` | `my-svc.static` [官方]；第 467 行注释「**静态IP类型服务的逻辑端口是80**」 |
+| MSE Nacos | `<服务名>.<分组>.<命名空间>.nacos` | `service-provider.DEFAULT-GROUP.public.nacos` [官方] |
+| 容器服务（K8s） | `<服务名>.<命名空间>.svc.cluster.local` | `httpbin.my-ns.svc.cluster.local` [官方]；`ext-auth.my-ns.svc.cluster.local` [开源] |
+
+- ⚠️ 存疑：`.static` 类型服务的端口口径——官方仅有代码注释「逻辑端口是80」，若认证服务实际监听 8080 该填什么**官方未说明**（ext-auth 插件可另配 `service_port`，但全局认证鉴权的端口行为未说明）→ 建议优先用 **DNS 域名来源**规避 [推断]
+
+##### A 路：安全管理 → 全局认证鉴权 →「自建的鉴权服务」[官方]
+
+入口：实例 → **安全管理 → 全局认证鉴权 → 创建鉴权**，鉴权类型选「**自建的鉴权服务**」。官方明确云原生API网关全局认证鉴权只有 **JWT / OIDC / 自建认证鉴权** 三种方式（global-authentication 文档），自建 Token 格式对应第三种。
+
+鉴权流程（官方原文语义）：网关截取原始业务请求的 **Path（含 Query Parameters）+ HTTP 方法 + Token** 组成新请求发给自建鉴权服务；「假设自建鉴权服务的鉴权API是 `/validateToken`，那么鉴权请求的真实 Path 是**鉴权API加上原始业务请求的Path**后的结果，即 `/validateToken/order`」——即**鉴权API是前缀拼接语义**。
+
+完整配置项表（apig 与 aigw 两份官方文档 diff 后配置表逐字一致，仅产品名措辞与控制台入口不同）：
+
+| 配置项 | 说明 |
+| --- | --- |
+| 开启 | 是否开启网关鉴权 |
+| 鉴权名称 | 自定义名称 |
+| 鉴权类型 | 选「自建的鉴权服务」 |
+| 鉴权服务 | 从服务管理中选择已添加的服务。**仅支持 HTTP 协议，不支持 Dubbo 等**；多端口 K8s Service **默认取第一个端口**，要用其他端口需在容器服务中另建一个只含目标端口的 Service |
+| 鉴权API | 鉴权服务的 Path，**前缀匹配**。SpringMVC 示例：鉴权 API 为 `/check` 时需 `@RequestMapping("/check/")` 处理 `/check/**` |
+| Token位置 | Token 所在请求 Header，常见 Authorization、Cookie；下拉或手动输入 |
+| 鉴权请求中允许携带的头部 | 按需配置额外头部；**Host、Method、Path、Content-Length 默认自动添加**，无需手动配 |
+| 鉴权响应中允许保留的头部 | 鉴权响应头回填到客户端请求；同名头部值会被覆盖 |
+| 鉴权请求中允许携带Body | 勾选后鉴权请求带原始 Body；「Body最大字节数」单位字节 |
+| 超时时间 | **单位：秒，默认 10 秒** |
+| 模式 | **宽松模式**（鉴权服务不可用——连接失败或 5xx——时**放行**客户端请求，官方建议）/ **严格模式**（不可用时**拒绝**） |
+| 简单条件（授权） | **白名单模式**（名单内 Hosts/Paths 免鉴权，其余都鉴权）/ **黑名单模式**（名单内才鉴权）。规则条件=域名+路径（精确/前缀末尾加`*`/正则 Google Re2）+大小写敏感+请求头（等于/不等于/存在/不存在/包含/不包含/前缀/后缀/正则，多 Header 为「与」）；多行规则之间为「或」 |
+| 复杂条件（授权） | YAML 配置 **Envoy permission 数据结构**，与/或/非组合条件（and_rule/or_rules/not_rule）；满足条件才执行鉴权 |
+
+复杂条件官方示例（正则匹配域名，逐字抄自 raw）：
+
+```yaml
+permissions:
+# and_rule 表示下面的所有 rules 条件同时成立时执行鉴权
+- and_rule:
+    rules:
+      - url_path:
+          # 前缀匹配路径
+          path:
+            prefix: /
+      - header:
+          # 正则匹配
+          safe_regex_match:
+            regex: "(exampleA\\.com|exampleB\\.com)"
+          # 支持HTTP Pseudo-Header规范，可通过":authority"这个Header来获取域名
+          name: ":authority"
+```
+
+（注意官方提示：regex 需**完全匹配**而非部分匹配，`test.exampleA.com` 不会命中上例。）
+
+鉴权结果判定 [官方]：
+- 鉴权服务返回 **200** → 放行，网关继续转发原始业务请求
+- 返回 **401/403** → 网关直接把鉴权服务的响应返回客户端（拒绝）
+- 若认证服务受业务限制必须**统一返 200** → 用内置响应头 **`x-mse-external-authz-check-result`**：`true` 放行 / `false` 拒绝
+
+管理与生效：**创建完成后需在全局认证鉴权页面手动点「开启」才生效**；只有**关闭状态才可删除**；详情页可追加「创建授权信息」（域名+Path+匹配方式）。
+
+A 路作用域说明：配置入口在实例级「安全管理 → 全局认证鉴权」，授权范围仅靠简单条件（Hosts/Paths/Header 黑白名单）与复杂条件（Envoy permission YAML）表达；**能否像插件一样按路由级/域名级作用域挂载，官方未说明**；**是否有实例规格限制（如 Serverless 版能否使用 A 路），官方未说明**。「apig 与 aigw 两条产品线 A 路配置一致」是主控对两份官方原文逐字对比得出的**推断**（本次 diff 复核：配置表除产品名措辞外一致），官方并未声明两者一致。
+
+##### B 路：插件市场 Higress `ext-auth` 插件（控制台中文名「外部认证」）[开源]
+
+出处：alibaba/higress 仓库 `plugins/wasm-go/extensions/ext-auth/README.md`（渲染页 higress.ai/docs/latest/plugins/authentication/ext-auth/）。插件执行阶段=**认证阶段**，优先级 **360**。实现参考 Envoy 原生 ext_authz filter 的 HTTP 部分。
+注意：help.aliyun.com 三条产品线（云原生API网关/AI网关/MSE 云原生网关）的「认证鉴权」平台插件清单页均只有 key-auth/basic-auth/hmac-auth/jwt-auth/oauth/jwt-logout（MSE 另有 edas-service-auth），**均不含 ext-auth** [官方]；阿里云官方文档定义「官方插件=Higress 官方开放到插件市场的插件」，而 ext-auth 是 Higress 官方仓库插件，但**当前是否在阿里云插件市场在架，官方未说明**（以控制台插件市场实况为准）。
+
+顶层字段表（逐字抄自 README）：
+
+| 名称 | 数据类型 | 必填 | 默认值 | 描述 |
+| --- | --- | --- | --- | --- |
+| `http_service` | object | 是 | - | 外部授权服务配置 |
+| `match_type` | string | 否 | | 可选 `whitelist` 或 `blacklist` |
+| `match_list` | array of MatchRule | 否 | | 请求匹配规则列表，支持按域名、方法、路径和请求头是否存在进行匹配 |
+| `failure_mode_allow` | bool | 否 | false | 设为 true 时，即使与授权服务通信失败或其返回 5xx，仍接受客户端请求 |
+| `failure_mode_allow_header_add` | bool | 否 | false | 与上一项同为 true 时，失败放行会加头 `x-envoy-auth-failure-mode-allowed: true` |
+| `status_on_error` | int | 否 | **403** | 授权服务无法访问或 5xx 时返回给客户端的状态码 |
+
+`http_service` 字段表：
+
+| 名称 | 数据类型 | 必填 | 默认值 | 描述 |
+| --- | --- | --- | --- | --- |
+| `endpoint_mode` | string | 否 | **envoy** | 可选 `envoy` 或 `forward_auth` |
+| `endpoint` | object | 是 | - | 发送鉴权请求的 HTTP 服务信息 |
+| `timeout` | int | 否 | **1000** | ext-auth 服务连接超时时间，**单位毫秒** |
+| `authorization_request` | object | 否 | - | 发送鉴权请求配置 |
+| `authorization_response` | object | 否 | - | 处理鉴权响应配置 |
+
+`endpoint` 字段表：
+
+| 名称 | 数据类型 | 必填 | 默认值 | 描述 |
+| --- | --- | --- | --- | --- |
+| `service_name` | string | **是** | - | 「输入授权服务名称，**带服务类型的完整 FQDN 名称**，例如 `ext-auth.dns` 、`ext-auth.my-ns.svc.cluster.local`」（README 第 47 行逐字）——即填网关「服务」里已注册服务的带服务类型后缀 FQDN，**不是裸域名也不是裸服务名**，四种来源格式见上方 FQDN 对照表 |
+| `service_port` | int | 否 | **80** | 授权服务的服务端口 |
+| `service_host` | string | 否 | - | 请求授权服务时设置的 Host 头，不填时和 FQDN 保持一致 |
+| `path_prefix` | string | `endpoint_mode=envoy` 时**必填** | - | envoy 模式下鉴权请求的路径**前缀**（拼接原始请求路径） |
+| `request_method` | string | 否 | GET | forward_auth 模式下鉴权请求的 HTTP Method |
+| `path` | string | `endpoint_mode=forward_auth` 时**必填** | - | forward_auth 模式下鉴权请求的**固定路径** |
+
+`authorization_request` 字段表：
+
+| 名称 | 数据类型 | 必填 | 默认值 | 描述 |
+| --- | --- | --- | --- | --- |
+| `allowed_headers` | array of StringMatcher | 否 | - | 匹配项的客户端请求头加入鉴权请求；**自动包含 `Authorization` 头**（forward_auth 模式还会自动加 `X-Forwarded-*`） |
+| `allowed_properties` | array of AllowedProperty | 否 | - | 把 Envoy filter state 的 property（如 `route_name`）映射为 HTTP header 发给授权服务 |
+| `headers_to_add` | map[string]string | 否 | - | 附加到鉴权请求的固定头；同名客户端请求头被覆盖 |
+| `with_request_body` | bool | 否 | false | 缓冲客户端请求体并发送至鉴权请求（GET/OPTIONS/HEAD 不生效） |
+| `max_request_body_bytes` | int | 否 | **10MB** | 内存中保存请求体的最大尺寸；达到该值**返回 413 且不启动授权过程**，**此设置优先于 `failure_mode_allow`** |
+
+`authorization_response` 字段表：
+
+| 名称 | 数据类型 | 必填 | 默认值 | 描述 |
+| --- | --- | --- | --- | --- |
+| `allowed_upstream_headers` | array of StringMatcher | 否 | - | 匹配项的鉴权响应头加入原始客户端请求（转发给后端）；同名覆盖 |
+| `allowed_client_headers` | array of StringMatcher | 否 | - | 不设置时请求被拒绝则鉴权响应的**全部**头返回客户端；设置后仅匹配项返回 |
+
+辅助类型：StringMatcher（exact/prefix/suffix/contains/regex 五选一）；MatchRule（match_rule_domain 支持 `*.bar.com` 泛域名 / match_rule_method / match_rule_path / match_rule_type / match_rule_headers）；HeaderPresenceCondition（name + exists，值为空串仍视为存在）。
+
+两种 `endpoint_mode` 差异（README 原文语义）：
+
+| 维度 | envoy 模式（默认） | forward_auth 模式 |
+| --- | --- | --- |
+| HTTP Method | 用**原始请求**的 Method | 用配置的 `request_method`（默认 GET） |
+| 路径 | `path_prefix` **前缀拼接**原始请求路径（同 A 路语义） | 固定 `path`，不拼接 |
+| 额外头 | 自动带 `Authorization` | 自动带 `Authorization` + `x-forwarded-proto` / `x-forwarded-method` / `x-forwarded-host` / `x-forwarded-uri`（原始 path 含参数） |
+| 适用 | 鉴权接口按业务 Path 分路径 | **认证接口是固定路径时必须用此模式** |
+
+黑白名单：默认**白名单**模式，白名单为空时所有请求都鉴权；whitelist 匹配即跳过鉴权，blacklist 匹配才鉴权；单规则内条件 AND、`match_list` 规则间 OR。
+
+完整示例 YAML（逐字抄自 Higress README；假设 ext-auth 服务在 K8s 中 serviceName=`ext-auth`、命名空间 `backend`、端口 `8090`、路径 `/auth`）：
+
+envoy 模式（示例1）：
+
+```yaml
+http_service:
+  endpoint_mode: envoy
+  endpoint:
+    service_name: ext-auth.backend.svc.cluster.local
+    service_port: 8090
+    path_prefix: /auth
+  timeout: 1000
+```
+
+envoy 模式带头透传的增强版（示例2，鉴权响应头 `x-user-id`/`x-auth-version` 回填后端请求）：
+
+```yaml
+http_service:
+  authorization_request:
+    allowed_headers:
+      - exact: x-auth-version
+    headers_to_add:
+      x-envoy-header: true
+  authorization_response:
+    allowed_upstream_headers:
+      - exact: x-user-id
+      - exact: x-auth-version
+  endpoint_mode: envoy
+  endpoint:
+    service_name: ext-auth.backend.svc.cluster.local
+    service_host: my-domain.local
+    service_port: 8090
+    path_prefix: /auth
+  timeout: 1000
+```
+
+forward_auth 模式（示例1）：
+
+```yaml
+http_service:
+  endpoint_mode: forward_auth
+  endpoint:
+    service_name: ext-auth.backend.svc.cluster.local
+    service_port: 8090
+    path: /auth
+    request_method: POST
+  timeout: 1000
+```
+
+forward_auth 模式下鉴权服务**实际收到的抓包请求**（原始请求为 `GET /users?apikey=...`，Host: foo.bar.com）：
+
+```
+POST /auth HTTP/1.1
+Host: ext-auth.backend.svc.cluster.local
+Authorization: xxx
+X-Forwarded-Proto: HTTP
+X-Forwarded-Host: foo.bar.com
+X-Forwarded-Uri: /users?apikey=9a342114-ba8a-11ec-b1bf-00163e1250b5
+X-Forwarded-Method: GET
+Content-Length: 0
+```
+
+（envoy 模式下则收到 `POST /auth/users?apikey=... HTTP/1.1`，即前缀拼接效果。鉴权服务返回 5xx 时客户端收到 `status_on_error` 默认 403 + 鉴权服务全量响应头。）
+
+安装启用（B 路操作路径）[官方]：插件市场（或实例 → 插件）→ 安装 → **规则配置**（选择生效范围：**MCP/路由级** / **域名级**（特定域名优先级高于泛域名）/ **实例级**（全局兜底））→ 启用。卸载前需先停用规则；未启用卸载会连带删除规则配置。
+
+##### A/B 路选型建议
+
+| 场景 | 推荐 | 理由 |
+| --- | --- | --- |
+| Serverless 版 AI 网关 | **只能 A 路** | 官方原文：仅专享实例型 AI 网关支持安装与启用插件，Serverless 版不支持 |
+| 需要按路由/域名细粒度挂载外部认证 | **B 路** | 插件规则官方支持路由级/域名级/实例级三级作用域；A 路作用域仅实例级入口 + 黑白名单表达（路由级挂载官方未说明） |
+| 认证接口是固定路径（如统一 POST /auth） | **B 路 forward_auth 模式** | A 路与 B 路 envoy 模式都是前缀拼接语义，固定路径需 forward_auth 的 `path` |
+| 只想要实例全局「一层鉴权」+ 白名单放行健康检查/登录接口 | A 路即可 | 简单条件白名单直接表达，无需装插件 |
+| 需要把鉴权响应头（如 x-user-id）透传给后端 | 两路都行 | A 路「鉴权响应中允许保留的头部」；B 路 `allowed_upstream_headers` |
+| 需要 failure 放行/拒绝精细控制 + 自定义失败状态码 | B 路 | `failure_mode_allow` + `status_on_error`；A 路对应宽松/严格模式（状态码不可自定义，官方未说明） |
+| 复杂与/或/非授权条件 | A 路复杂条件（Envoy permission YAML）或 B 路 match_list | A 路表达力更强（not_rule 嵌套）；B 路 MatchRule 仅 AND/OR 两层 |
+
+#### MCP 维度：MCP 服务鉴权（2026-09-21 收口补充）
+
+> 来源：MCP 官方规范（raw/standards/standards-2026-09-21-*，2025-06-18/2025-11-25/2026-07-28/draft 四版关键结论一致）+ AI 网关 MCP 官方文档 5 篇（raw/aliyun-docs/aliyun-docs-2026-09-21-aigw-{debug-mcp-services, consumer-certification, http-to-mcp-field-configurations, new-feature-release-notes, engine-version-description}.md）+ Higress ext-auth 源码摘录（raw/misc/misc-2026-09-21-higress-ext-auth-source-excerpts.md）+ ATA 实操摘录（raw/ata/ata-2026-09-21-*，⚠️ SSO 限制仅归档摘录）。
+
+##### 协议层事实 [规范]（MCP 官方规范，最新版 2026-07-28）
+
+- 「The Model Context Protocol provides authorization capabilities **at the transport level**」→ 鉴权在**传输层**（传输层鉴权，统一覆盖所有 MCP 方法），不在 MCP 方法语义层
+- 「Authorization is **OPTIONAL** for MCP implementations」→ 是否鉴权是**服务器级**选择，不是方法级选择
+- 「MCP servers **MUST** validate access tokens **before processing the request**…ensure **no data is returned to unauthorized parties**」
+- 「Servers **SHOULD** implement proper authentication for **all connections**」（transports Security Warning 第 3 条）
+- Streamable HTTP：「The server **MUST** provide a single HTTP endpoint path (…**MCP endpoint**) that supports both POST and GET methods」（即**单一 MCP endpoint**）「Every JSON-RPC message sent from the client **MUST** be a new HTTP POST request to the MCP endpoint」
+- 规范**显式预设网关介入**：头部镜像 body 字段的目的是「so that **intermediaries (load balancers, gateways**, observability tooling) can route and inspect requests without parsing the body」
+- 标准栈：OAuth 2.1(draft-13) + RFC6750 Bearer + RFC8414 + RFC7591 + RFC8707；MCP Server = OAuth 2.1 resource server；MUST 实现 RFC 9728（`/.well-known/oauth-protected-resource`）；MUST 在 401 里回 `WWW-Authenticate: Bearer resource_metadata="..."`
+- **不存在任何 per-method 免鉴权白名单**：规范里没有 "unprotected endpoints" 概念（grep `unprotected`/`anonymous`/`without auth` 于 authorization.mdx 四版 + transports + lifecycle.mdx + server/tools.mdx + security_best_practices.mdx + tutorials/security/* 全部 0 命中；lifecycle.mdx 与 server/tools.mdx 里 `authoriz|authenticat|credential` 出现 0 次）
+
+🔑 **推论 [推断]（推理链条）**：`initialize`/`tools/list`/`tools/call` 在 HTTP 层是**同一 path、同一 method(POST)**，网关不解析 body 就**物理上无法区分**这三类 JSON-RPC 消息 → 任何声称「某方法能鉴权、某方法不能」的说法，只可能发生在鉴权被挂到 **MCP 语义层**（按 MCP 服务/工具挂消费者认证）时，在 HTTP 传输层不成立。
+
+##### 三种鉴权能力的本质区别 [官方]（选型核心表）
+
+| 能力 | 凭证来源 | 校验位置 | 能否调客户自有接口 | 作用维度 |
+| --- | --- | --- | --- | --- |
+| 内置认证插件（key-auth/basic-auth/hmac-auth/jwt-auth/jwt-logout/oauth） | 网关自发 | 网关本地 | ❌ | 插件三级作用域 |
+| **消费者认证**（AI 网关，支持 MCP 服务级/工具级） | 网关自发（API Key） | 网关本地 | ❌ | MCP 服务级 > MCP 工具级 |
+| **自建鉴权**（安全管理→全局认证鉴权）/ **ext-auth 插件** | 客户自有 | **回调客户 HTTP 接口** | ✅ | 自建鉴权=实例级；ext-auth=插件三级作用域 |
+
+- [官方] 消费者认证：「支持为 MCP 服务和 MCP 工具配置消费者认证」「MCP服务级别消费者认证权限高于MCP工具级别」「开启消费者认证后，若没有配置授权关系，将无法访问当前API」「认证方式目前仅支持 **API Key** 认证」
+- 🔴 **官方文档自相矛盾（必须记录）**：consumer-certification.md 称「仅支持 API Key」，但发布记录 2026-01 称「MCP Server 支持 JWT 认证」→ 文档口径滞后，**以控制台实际为准**
+- [官方] `ApiKeyIdentityConfig` 支持 `apikeySource` = Header / Query String，且「仅AI网关Header模式允许1-3项」→ **双层组合方案的关键**：把网关 API Key 放独立头或 query，`Authorization` 留给客户自有 PAT
+- 🔴 [推断，**未实测**] **双层组合方案**：外层 MCP 服务级消费者认证（API Key 放独立头/query）兜住全部方法 + 内层 ext-auth 回调客户 PAT 校验接口。架构可行、未实测，上线前必须在客户环境验证。
+
+##### HTTP转MCP 场景的鉴权语义 [官方]
+
+- 工具由 Swagger/OpenAPI3 导入或自定义 YAML，**存放在网关**；`tools/list` 由网关按 YAML 应答，**不回调客户后端**；只有 `tools/call` 才真正打到客户服务（http-to-mcp-field-configurations 全文已归档）
+- ⚠️ 但**不能**因此说「tools/list 无需鉴权」：①官方《调试MCP服务》第 29 行逐字——「如果所选消费者只授权了 MCP工具级别消费者认证，且仅授权某些工具的情况下，**HTTP转MCP的场景中获取工具列表只能看到和调用有权限的工具**；直接代理场景调试的时候能看到全部工具，选择授权的工具调用是ok的，没权限的会403」→ **工具级鉴权在 HTTP转MCP 下确实作用于 tools/list（做结果过滤）**。这条官方原文的价值：任何「tools/list 不能鉴权」的内部口径都与它冲突；②tools/list 会泄露工具目录元数据
+- [实战] ATA 11020495607 陈思亮(玄斧) 2025-10-29《AI网关-Restful API转换MCP的桥梁》：唯一真正的 HTTP转MCP + 消费者鉴权端到端实操（「新建消费者｜为后续MCP接口鉴权使用」→「为mcp添加消费者鉴权」→「调试界面选择…消费者、api key…点击连接测试连通性，正常情况会提示连接成功并左侧框会列出该mcp服务的工具列表」）→ **证明消费者鉴权下连接与列工具均需 API Key**（SSO 限制，归档为摘录 raw/ata/ata-2026-09-21-http-to-mcp-consumer-auth-excerpts.md）
+- 调试细节 [官方]：MCP Inspector 配置「`Header Name` 为 `Authorization` 不需要修改，在 `Bearer Token` 中填入 `HereIsToken`」（调试MCP服务 第 60 行）→ 网关消费者 API Key 以 `Authorization: Bearer <key>` 形态传递（见下方 Bearer 前缀存疑项）
+- 火山侧同构事实 [官方-竞品]：「HTTP 转换为 MCP 时，仅支持通过 Streamable HTTP 协议访问网关」→ 详见 competitor-cloud.md「火山引擎 API 网关/AI 网关对标」
+
+##### 引用限定（🔴 防污染，2026-09-21 收口核实）
+
+- **ATA 11020742807**（骁霆/王炳松 2026-08-09《基于阿里云 AI 网关的万镜一刻 API 接入方案》§5.5）的五句结论——「生效优先级由路由级向下递减：MCP/路由级 → Model API 级 → Agent API 级 → 域名级 → 实例级」「实例级规则是兜底规则，实测在自定义 HTTP 类型 Model API 链路上可能不触发」「Model API 级规则在当前控制台版本下，自定义 HTTP 类型 API 不出现在可选列表中」「域名必须精确填写，不能使用通配符 `*`」「规则页必须显示『当前生效状态：已生效』」——已逐字复核**全部准确**，**但必须带限定引用**：这些是「**域名级自定义 WASM 插件**绑定在**自定义 HTTP 类型 Model API 链路**」上的实测，**不是 MCP 链路**；该文 `MCP` 仅出现 1 次（就在优先级链那串里），`ext-auth`/`外部认证`/`tools/list`/`initialize`/`tools/call`/`消费者` 均 0 命中 → **不能作为 MCP 鉴权证据引用**；「实例级不触发」**不可外推到 MCP 场景**（摘录+限定已归档 raw/ata/ata-2026-09-21-wanjing-yike-plugin-scope-excerpts.md）
+- 「实例级」语义存在张力：官方称实例级是「当路由和域名级规则都没有匹配到的时候则匹配该规则」的兜底；ATA 实测称其在自定义 HTTP 类型 Model API 链路上可能不触发 → **实操建议：优先用域名级，不要依赖实例级**（已列入避坑）
+- **ATA 11020591207**（鹤渡/章丹鹰）「AI 网关（aigw）：云原生 API 网关面向 AI 场景的专属版本，定位是 AI 应用与模型服务之间的核心连接层」引文准确，但该文**无插件生效维度内容**（`生效` 0 命中），主题是配置与底层资源的「引用悬空」一致性校验 → **不是生效维度的出处**
+- **ATA 11020729615** 筱奥《MCP Server 与 Client 之间的鉴权：从协议到工程落地》（2026-07-30）讲的是**内部 Aone MCP 网关（Normandy），不是阿里云 AI 网关**，只能当模式参考（「网关在收到 MCP Client 的连接请求时，会校验请求中携带的身份凭证…凭证无效或缺失则直接返回 401 Unauthorized」= 连接即鉴权，覆盖 initialize/tools/list）→ **引用时必须写清「非阿里云产品」限定，否则污染知识库**
+
+#### ext-auth `forward_auth` 模式源码级细节（2026-09-21 收口补充）[开源]
+
+> 出处：alibaba/higress main 分支 `plugins/wasm-go/extensions/ext-auth/main.go` + `config/config.go` 关键片段（摘录归档 raw/misc/misc-2026-09-21-higress-ext-auth-source-excerpts.md，⚠️ 摘录而非全文）。这是「**不改客户认证接口**」解法的源码级依据，也是本次收口最重要的可复用知识。
+
+**1. 路径拼接只发生在 envoy 模式**：
+
+```go
+requestMethod := httpServiceConfig.RequestMethod
+requestPath := httpServiceConfig.Path
+if httpServiceConfig.EndpointMode == config.EndpointModeEnvoy {
+    requestMethod = ctx.Method()
+    requestPath = path.Join(httpServiceConfig.PathPrefix, ctx.Path())
+}
+```
+
+→ forward_auth 用固定 `path` 原样发出鉴权请求；原始路径通过 `X-Forwarded-Uri`（**含 query**）传递。自动附加头共 **6 个**：`x-forwarded-proto/method/host/uri` + 兼容用的 `x-original-method/uri`（源码注释「Compatible with older versions」→ 说明 `X-Forwarded-*` 是较新能力）。
+
+**2. `Authorization` 头无条件透传**（源码位置在 `endpoint_mode` 分支**之外**、也在 `allowed_headers` 循环**之外**）：
+
+```go
+// Add the Authorization header if present
+authorization := util.ExtractFromHeader(reqHeaders, HeaderAuthorization)
+if authorization != "" { extAuthReqHeaders.Set(HeaderAuthorization, authorization) }
+```
+
+→ 只要原始请求带 Authorization 就透传，与 endpoint_mode 和 allowed_headers 均无关。**推论：客户自有 PAT 校验逻辑一行不用改。**
+
+**3. 🔴 `with_request_body` 与 GET 冲突会导致插件加载失败**（config/config.go）：
+
+```go
+if withRequestBody.Bool() && (httpService.RequestMethod == http.MethodGet || ...Options || ...Head) {
+    return errors.New(fmt.Sprintf("requestMethod %s does not support with_request_body set to true", httpService.RequestMethod))
+}
+```
+
+且 forward_auth 下 `request_method` 缺省即 GET；envoy 模式 `RequestMethod` 为空串 → **该校验只在 forward_auth 触发**。配错则配置解析失败、**插件整体不生效**（维护者口径：「只要有一个插件的配置加载异常，两个插件的配置都不会正常生效」）。
+
+**4. `match_list` 路径匹配用不含 query 的 path**（`wrapper.GetRequestPathWithoutQuery()`）；不配 `match_type`/`match_list` → 默认白名单模式且名单为空 → **所有请求都鉴权**。
+
+**5. 🔴 `match_type`/`match_list` 必须与 `http_service` 同级**（维护者 hanxiantao 原话：「`match_type` 、 `match_list` 和 `http_service` 是一个层级的。」discussions/2142），嵌进 `http_service` 里会**静默失效**。
+
+**6. 默认 fail-closed 细节**：`status_on_error` 默认 403；`failure_mode_allow` **只对 ≥500 生效**（`if statusCode >= http.StatusInternalServerError && config.FailureModeAllow`）；授权服务返 4xx 时按**原状态码**拒绝（不走 status_on_error、不受 failure_mode_allow 影响）；连接失败(err≠nil)被当作 500 处理，**故超时会放行**（源码注释「Since the handling logic for call errors and HTTP status code 500 is the same, we directly use 500 here.」）。
+
+**7. 🔴 填 IP/裸域名报 `bad argument`**：`failed to call ext auth server: error status returned by host: bad argument`（真实案例 discussions/3991，`service_name: "10.24.11.27"`）。维护者 CH3CHO FAQ：「`bad argument` 错误在绝大部分场景下都是由于配置了网关并不知晓的服务信息。Wasm 插件只能请求网关拿到的 Cluster 信息…而不能直接指定目标服务的地址和端口来请求。」
+
+**8. K8s Service 默认只下发绑了路由的**（FAQ：「针对 K8s 内的 Service，Higress 默认只会下发关联了路由的 K8s 服务」）→ 认证服务没绑任何路由时网关拿不到 cluster。解法：造一条永不匹配的路由，或改用 DNS 服务来源。别用 `127.0.0.1`（指向网关自身）；连通性排查用 `telnet`/`nc` 不用 `ping`。
+
+#### 产品缺口 / 可提产研的需求（2026-09-21 收口补充）
+
+- [推断] **自建鉴权缺「固定路径鉴权」语义**：Higress 开源 ext-auth 早有 `forward_auth` 模式（固定 path + 可配 method），但阿里云「自建认证鉴权」控制台只暴露了前缀拼接语义（等价于 envoy 模式）→ **需求建议**：控制台增加「鉴权路径匹配模式」选项（前缀拼接 / 精确固定路径），或在插件配置里显式暴露 `endpoint_mode: forward_auth`。**这不是架构改造，是把自家开源已有能力透出到控制台。**
+- [官方未说明] ext-auth 是否在阿里云插件市场在架：三条产品线官方文档 0 命中，官方认证插件清单只有 6 个不含 ext-auth，目前只有客户与售后的对话作证 → 以控制台实况为准
+- [存疑] 商业版 ext-auth 是否支持 forward_auth：本卡证据读自开源 main 分支；`x-original-*` 头带「Compatible with older versions」注释说明 `X-Forwarded-*` 是较新能力；最新公开引擎版本 2.1.23（2026-09-03）→ **上线前必须在客户实例实测**
+- [存疑] ext-auth 走 HTTPS/TLS 到 443 是否可行：官方仅说自定义 Wasm 出站「目前仅支持 http 调用」，ext-auth 用同一 wrapper client，TLS 未验证
+- 🔴 [存疑·**最可能导致落地失败的细节**] **Authorization 格式风险**：客户接口可能期望裸 `Authorization: <PAT>`，而 MCP 标准认证走 `Bearer <token>`（官方 debug 文档的 MCP Inspector 就是用 `Bearer Token` 字段），客户端很可能自动加 `Bearer ` 前缀 → 必须提前确认客户 verify 接口是否容忍 Bearer 前缀
+
+#### 避坑
+
+- 🔴 **插件仅专享实例型 AI 网关支持，Serverless 版装不了插件**（官方原文：「仅专享实例型AI网关支持安装与启用插件，Serverless版不支持」）→ 客户用 Serverless 时必须走 A 路（A 路在 Serverless 上是否可用官方未说明，需实测/工单确认）
+- 🔴 **超时单位陷阱**：A 路「超时时间」单位**秒**（默认 10）；B 路 `timeout` 单位**毫秒**（默认 1000）。数值同为 10/1000 但单位差 1000 倍——把 B 路的 1000 当秒填进 A 路≈16 分钟挂住，把 A 路的 10 当毫秒填进 B 路=10ms 瞬间超时
+- 🔴 **鉴权路径拼接语义**：A 路「鉴权API」是**前缀**，真实鉴权 Path = 鉴权API + 原始业务 Path（`/validateToken` + `/order` = `/validateToken/order`）；B 路 envoy 模式同理用 `path_prefix` 拼接。认证接口若是固定路径，必须 B 路 `forward_auth` 模式配 `path`
+- 🔴 **service_name 不是裸域名**：B 路必须填带服务类型后缀的完整 FQDN（`xxx.dns` / `xxx.static` / `xxx.<组>.<命名空间>.nacos` / `xxx.<ns>.svc.cluster.local`），且该服务必须先在网关「服务」里注册
+- `.static` 服务端口口径存疑：官方只有代码注释「静态IP类型服务的逻辑端口是80」，实际监听 8080 时怎么填**官方未说明** → 优先 DNS 域名来源规避 [存疑]
+- A 路鉴权服务**仅支持 HTTP 协议**，不支持 Dubbo；多端口 K8s Service **默认取第一个端口**，要用其他端口需另建只含目标端口的 Service
+- 鉴权结果判定：200 放行、401/403 直接回客户端；认证服务必须统一返 200 时用 `x-mse-external-authz-check-result` 头（true 放行/false 拒绝）
+- A 路创建后**忘记点「开启」不生效**；删除必须先关闭
+- B 路 `max_request_body_bytes`（默认 10MB）超限直接返 **413 且不启动授权**，优先级高于 `failure_mode_allow`——大 Body 上传接口要么调大要么别开 `with_request_body`
+- A 路宽松模式=鉴权服务挂了**放行**（官方建议但安全风险自负）；严格模式=挂了**拒绝**。B 路对应 `failure_mode_allow`（默认 false=拒绝）
+- 外网认证服务地址需配 NAT 网关，否则网关出不去
+- ACK 来源必须与网关同 VPC（跨 VPC 要重建网关实例），集群 ≥1.18（建议 1.28+），安全组放行
+- 🔴 **优先用域名级，不要依赖实例级兜底**：官方称实例级是「当路由和域名级规则都没有匹配到的时候则匹配该规则」的兜底，但 ATA 11020742807 实测（**限定于自定义 HTTP 类型 Model API 链路，非 MCP，不可外推**）称实例级规则可能不触发 → 需要全局覆盖时优先配域名级规则，并在规则页确认「当前生效状态：已生效」（详见上方「引用限定」）
+- 🔴 B 路 forward_auth 配 `with_request_body: true` 而 `request_method` 缺省（GET）→ 配置解析直接报错、**插件整体不生效**；`match_type`/`match_list` 嵌进 `http_service` 里会**静默失效**（必须同级）——两条详见上方「forward_auth 源码级细节」
+- 🔴 消费者 API Key 经 `Authorization: Bearer <key>` 传递（官方 MCP Inspector 调试口径），若客户自有 verify 接口期望裸 PAT，**Bearer 前缀是否容忍必须提前确认** [存疑]（见「产品缺口」节）
+
+#### 报价量级（中国内地，官方价，页面更新 2026-06-18 / 2026-07-29，2026-09-21 归档）
+
+**云原生API网关专享实例（apigw 规格）** [官方]：计费项 = 网关实例费 + 数据处理费 + 公网流量费（CDT 统一出账）；按量付费（小时，不足 1 小时按 1 小时）或包年包月（**首购 6 折**）；网关内置 SLB 无需另购。
+
+| 实例规格 | 按量（元/小时） | 包月（元/月） |
+| --- | --- | --- |
+| apigw.dev.x1 | 0.826 | 416 |
+| apigw.small.x1 | 1.935 | 975 |
+| apigw.small.x2 | 3.702 | 1,866 |
+| apigw.small.x4 | 7.007 | 3,531 |
+| apigw.medium.x1 | 14.025 | 7,069 |
+| apigw.medium.x2 | 27.621 | 13,921 |
+| apigw.medium.x3 | 41.216 | 20,773 |
+| apigw.large.x1 | 54.812 | 27,625 |
+| apigw.large.x2 | 109.193 | 55,033 |
+| apigw.large.x3 | 163.575 | 82,442 |
+| apigw.large.x4 | 217.956 | 109,850 |
+
+其他地域相对中国内地的倍率（按 dev.x1/small.x1 锚点核算，全规格一致）[官方+推断(倍率为本卡计算)]：金融云 ≈1.90x、中国香港/东京 ≈1.50x、新加坡/雅加达/法兰克福 ≈1.38x、美国（弗吉尼亚/硅谷）≈1.20x。
+
+**AI 网关专享实例（aigw 规格，中国内地）** [官方]：
+
+| 实例规格 | 按量（元/小时） | 包月（元/月） |
+| --- | --- | --- |
+| aigw.small.x1 | 7.9335 | 3,997.5 |
+| aigw.small.x2 | 15.1782 | 7,650.6 |
+| aigw.small.x4 | 28.7287 | 14,477.1 |
+| aigw.medium.x1 | 56.1 | 28,276 |
+| aigw.medium.x2 | 110.484 | 55,684 |
+| aigw.medium.x3 | 164.864 | 83,092 |
+| aigw.large.x1 | 213.7668 | 107,737.5 |
+| aigw.large.x2 | 425.8527 | 214,628.7 |
+| aigw.large.x3 | 637.9425 | 321,523.8 |
+
+（金融云/港日/新加坡雅加达法兰克福/美国地域价目表见 raw 归档 aigw-billing-dedicated-instance.md，倍率与 apigw 相同。）
+
+**数据处理量费用**（两产品同价）[官方]：公共云公网 **0.037 元/GB/小时**、私网 **0.049 元/GB/小时**；金融云公网 0.07、私网 0.093。数据处理量=请求+响应数据量之和，按小时结算。公网流量另走 CDT 计费。
+
+**AI Credits** [官方]（2026-09-21 收口补归档：raw/aliyun-docs/aliyun-docs-2026-09-21-aigw-ai-credits-billing.md）：AI 增强能力的按量计费单位，**0.01 元/Credit**；**仅智能路由等 AI 增强能力消耗 Credits，普通 LLM API 代理透传和自定义模型服务调用不消耗**；需先创建 AI 网关实例再单独开通，**开通后不支持退订**，未使用时不产生费用。
+
+**Serverless** [官方]（2026-09-21 收口补归档：raw/aliyun-docs/aliyun-docs-2026-09-21-aigw-serverless-old-billing.md + aliyun-docs-2026-09-21-aigw-commercialization-announcement.md）：新版公测 **2026-08-31 结束，9 月 1 日起商业化计费**（存量实例自动转商业化，无需迁移；不用的实例 9-1 前删除避免费用）。旧版 Serverless CU 计费：**Model API / MCP Server / Agent API 的 CU 系数分别为 10 / 5 / 2**，中国内地单价 **0.005 元/千CU**，**最小计费粒度 1000 CU、不足 10 万按 10 万计**（每小时结算请求 CU 费 + 公网流量费）；新客户建议选新版 Serverless 标准版或企业版。
+
+**对位竞品**：AWS API Gateway / Azure APIM / Kong Enterprise / GCP Apigee；AI 网关形态对位 AWS Bedrock Gateway、Cloudflare AI Gateway；开源内核即 Higress（可自建平替但失去托管 SLA）
+
+**典型选型场景**：微服务统一入口（替代 Nginx Ingress/Kong）、K8s Ingress 三合一、SaaS 多租户 API 管理 + 自建认证统一鉴权（→ cloud-solutions.md S10）、AI 应用统一入口（多模型路由/Token 限流/语义缓存/AI 护栏）、MCP Server 托管与 HTTP to MCP、对外开放 API + 消费者认证
+
+**官方文档**（本次 16 篇归档的 source_url，raw/aliyun-docs/aliyun-docs-2026-09-21-*）：
+- 配置自建认证鉴权（A 路）：https://help.aliyun.com/zh/api-gateway/cloud-native-api-gateway/user-guide/configure-self-built-authentication （apig，页面更新 2026-09-20）；https://help.aliyun.com/zh/api-gateway/ai-gateway/user-guide/configure-self-built-authentication （aigw，2026-06-02）
+- 全局认证鉴权类型（JWT/OIDC/自建）：https://help.aliyun.com/zh/api-gateway/cloud-native-api-gateway/user-guide/global-authentication-1
+- Go 语言开发网关插件（FQDN 命名规则出处）：https://help.aliyun.com/zh/api-gateway/cloud-native-api-gateway/user-guide/develop-plug-ins-in-go ；https://help.aliyun.com/zh/api-gateway/ai-gateway/user-guide/develop-gateway-plug-ins-using-the-go-language
+- Higress ext-auth 插件 README（B 路 schema）：https://raw.githubusercontent.com/alibaba/higress/main/plugins/wasm-go/extensions/ext-auth/README.md （渲染页 https://higress.ai/docs/latest/plugins/authentication/ext-auth/ ）[开源]
+- 创建服务：https://help.aliyun.com/zh/api-gateway/cloud-native-api-gateway/user-guide/create-service ；https://help.aliyun.com/zh/api-gateway/ai-gateway/user-guide/creating-services
+- 服务来源管理：https://help.aliyun.com/zh/api-gateway/cloud-native-api-gateway/user-guide/create-service-source
+- 插件安装启用卸载：https://help.aliyun.com/zh/api-gateway/cloud-native-api-gateway/user-guide/enable-plugin ；https://help.aliyun.com/zh/api-gateway/ai-gateway/user-guide/manage-plug-ins
+- 认证鉴权插件清单（三线均无 ext-auth）：https://help.aliyun.com/zh/api-gateway/cloud-native-api-gateway/user-guide/authentication ；https://help.aliyun.com/zh/api-gateway/ai-gateway/user-guide/authentication ；https://help.aliyun.com/zh/mse/user-guide/authentication-authentication
+- 计费：https://help.aliyun.com/zh/api-gateway/cloud-native-api-gateway/product-overview/billing-overview ；https://help.aliyun.com/zh/api-gateway/ai-gateway/product-overview/free-product-templates
+- 谱系/计费补充（2026-09-21 收口已补归档 raw）：llms.txt 全文 → raw/aliyun-docs/aliyun-docs-2026-09-21-apig-llms-index.md ；AI Credits https://help.aliyun.com/zh/api-gateway/ai-gateway/product-overview/ai-credits-billing-details → raw/aliyun-docs/aliyun-docs-2026-09-21-aigw-ai-credits-billing.md ；Serverless 旧版计费 https://help.aliyun.com/zh/api-gateway/ai-gateway/product-overview/serverless-old-billing-details → raw/aliyun-docs/aliyun-docs-2026-09-21-aigw-serverless-old-billing.md ；Serverless 商业化公告 https://help.aliyun.com/zh/api-gateway/ai-gateway-commercialization-announcement → raw/aliyun-docs/aliyun-docs-2026-09-21-aigw-commercialization-announcement.md
+- MCP 维度（2026-09-21 收口补充归档）：调试MCP服务 https://help.aliyun.com/zh/api-gateway/ai-gateway/user-guide/debug-mcp-services ；消费者认证 https://help.aliyun.com/zh/api-gateway/ai-gateway/user-guide/consumer-certification ；HTTP转MCP字段配置 https://help.aliyun.com/zh/api-gateway/ai-gateway/user-guide/http-to-mcp-field-configurations ；新功能发布记录 https://help.aliyun.com/zh/api-gateway/ai-gateway/product-overview/new-feature-release-notes-ai-gateway ；引擎版本说明 https://help.aliyun.com/zh/api-gateway/ai-gateway/product-overview/engine-version-description （均归档 raw/aliyun-docs/aliyun-docs-2026-09-21-aigw-*.md）
+- MCP 官方规范 [规范]：https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization （另归档 2025-11-25 版 authorization 与 2026-07-28 版 transports/streamable-http，raw/standards/standards-2026-09-21-*）
+- Higress ext-auth 源码 [开源]：https://github.com/alibaba/higress/tree/main/plugins/wasm-go/extensions/ext-auth （main.go/config.go 关键片段摘录归档 raw/misc/misc-2026-09-21-higress-ext-auth-source-excerpts.md）
+- ATA 实操/实测（SSO 限制，归档为摘录）：11020495607 陈思亮(玄斧)《AI网关-Restful API转换MCP的桥梁》→ raw/ata/ata-2026-09-21-http-to-mcp-consumer-auth-excerpts.md ；11020742807 骁霆/王炳松《基于阿里云 AI 网关的万镜一刻 API 接入方案》§5.5 → raw/ata/ata-2026-09-21-wanjing-yike-plugin-scope-excerpts.md （含 🔴 引用限定）
+
+**证据等级**：[官方]（help.aliyun.com 归档原文，2026-09-21 已全量补归档）/ [规范]（MCP 官方规范 raw/standards/）/ [开源]（Higress ext-auth README + main.go/config.go 源码摘录）/ [实战]（ATA 摘录）/ [官方-竞品]（火山引擎，见 competitor-cloud.md）/ [推断]（已逐条标注：EOL 日期对比、.static 端口存疑、两产品线 A 路一致性、地域倍率计算、MCP 方法不可区分推论、双层组合方案）/ [存疑]（商业版 forward_auth、HTTPS/TLS 443、Bearer 前缀容忍度——均需客户实例实测）
+**最近更新**：2026-09-21（收口补充：MCP 鉴权维度 + 三种鉴权能力对照 + forward_auth 源码级细节 + 产品缺口 + 引用限定修正；原 16+9 篇文档深度蒸馏，外部认证专项 + 三形态谱系消歧）
+
+---
+
+### API Gateway（原 API 网关 / 传统版 / apigateway）
+
+> ⚠️ **EOL 警示 [官方]**：本卡为「**原 API 网关（传统版 / apigateway）**」，是 API 网关三种形态中的传统形态（另两种为云原生 API 网关、AI 网关）。官方公告：**2026-08-23 停止新购（截至 2026-09-21 已过）、2027-09-21 全面下线，存量实例请迁移至云原生 API 网关**（help.aliyun.com/zh/api-gateway/llms.txt，2026-09-21 复核）。**新项目勿选本卡产品 → 见 [云原生 API 网关（APIG）/ AI 网关 深度卡](#云原生-api-网关apig--ai-网关深度卡)**。以下内容对存量客户仍然有效，保留不删。
 
 **官方定位**：API 全生命周期管理（发布/管理/认证/限流/计费）的网关 PaaS。
 **能做**：HTTP/HTTPS/WebSocket、签名/JWT/AppCode 鉴权、按分钟限流、参数映射、协议转换（HTTP→HSF/Dubbo）、API 市场售卖、灰度发布、监控告警
 **不擅长**：服务治理深度场景（→ MSE 云原生网关）；超低延迟内部网关（→ ALB + 自建鉴权）
 
-**典型选型场景**：对外开放 API、SaaS 多租户 API 管理、内部微服务 API 统一入口、API 经济变现、Open API 平台
+**典型选型场景**：对外开放 API、SaaS 多租户 API 管理、内部微服务 API 统一入口、API 经济变现、Open API 平台（⚠️ 均为存量场景；新项目 → 云原生 API 网关/AI 网关）
 **对位竞品**：AWS API Gateway / Azure APIM / Kong Enterprise / 腾讯云 API 网关
 **报价量级**：共享版 ¥0.06/万次调用 + ¥0.8/GB 流量；专享版按实例规格 ¥0.5/h 起
 **官方文档**：https://help.aliyun.com/zh/api-gateway/
 **证据等级**：[官方]
-**最近更新**：2026-06-18
+**最近更新**：2026-09-21（加 EOL 警示与三形态消歧交叉引用；既有内容保留，原蒸馏 2026-06-18）
 
 ---
 
@@ -1909,6 +2371,6 @@ FE 选型表：BE 总 CU <120→8CU×3；120~1000→16CU×3；1000~3000→32CU×
 | AI | 百炼 / PAI / Qwen | MaaS → 百炼；自训练 → PAI；模型调用 → DashScope |
 | 视频 | VoD / Live / RTC / MPS | 点播 → VoD；直播 → Live；实时互动 → RTC；纯转码/AI → MPS |
 | IoT | IoT Platform / Link IoT Edge | 设备接入 → IoT Platform；边缘计算 → Link IoT Edge |
-| 中间件 | MSE / RocketMQ / Kafka / API Gateway | 业务消息 → RocketMQ；流式 → Kafka；微服务 → MSE；API 管理 → API Gateway |
+| 中间件 | MSE / RocketMQ / Kafka / 云原生API网关(APIG) / AI网关 | 业务消息 → RocketMQ；流式 → Kafka；微服务注册治理 → MSE Nacos；API/微服务/Ingress 统一入口 → **云原生API网关**；AI 应用入口（多模型路由/Token限流/MCP）→ **AI网关**；~~API 管理 → API Gateway~~ **原API网关（传统版）已于 2026-08-23 停止新购、2027-09-21 全面下线，新项目勿选** → 见云原生API网关/AI网关深度卡 |
 | 安全 | WAF / DDoS / 云安全中心 / RAM | 6 层纵深防御全覆盖 |
 | 监控 | ARMS / SLS / CloudMonitor / OOS | APM → ARMS；日志 → SLS；基础 → CM；自动化运维 → OOS |

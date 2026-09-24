@@ -271,6 +271,8 @@ Qwen模型层      向量存储        企业API
 - 模型选择：复杂推理 → Qwen-Max；成本优先 → Qwen-Turbo（60% 减）
 - 高可用：AI Gateway + MSE Prompt 热更新 + AgentRun 沙箱
 
+> **口径说明（2026-09-21）**：上图「AI Gateway(Higress)」= 阿里云 **AI 网关**（云原生 API 网关面向 AI 原生应用的实例形态，Envoy/Higress 内核，非百炼自带组件）；入口「API Gateway」应理解为**云原生 API 网关**（原 API 网关/传统版已于 2026-08-23 停止新购）。产品卡/计费/外部认证配置 → `knowledge/aliyun-products.md`「云原生 API 网关（APIG）/ AI 网关【深度卡】」。既有结论不变。
+
 **客户参考**：一汽红旗(BI 7天→5秒) / 哈啰(GMV+5%) / 51Talk(成本-20~30%)
 
 ---

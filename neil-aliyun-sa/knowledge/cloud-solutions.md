@@ -11,7 +11,7 @@
 - 架构模板 → [../references/architecture-templates.md](../references/architecture-templates.md)(可复用架构模式)
 - 迁移方法 → [../references/migration-methodology.md](../references/migration-methodology.md)(IDC→云路径)
 
-**[[wikilink]] 实体索引**：本文件高频引用实体 → [[PolarDB]] [[ACK]] [[SLB]] [[百炼]] [[Tair]] [[MaxCompute]] [[Hologres]] [[Flink]] [[MSE]] [[WAF]] [[OSS]] [[CDN]] [[IoT Platform]] [[DataWorks]]
+**[[wikilink]] 实体索引**：本文件高频引用实体 → [[PolarDB]] [[ACK]] [[SLB]] [[百炼]] [[Tair]] [[MaxCompute]] [[Hologres]] [[Flink]] [[MSE]] [[WAF]] [[OSS]] [[CDN]] [[IoT Platform]] [[DataWorks]] [[云原生API网关]] [[AI网关]] [[ext-auth]]
 
 ## 索引
 
@@ -26,6 +26,7 @@
 - ★ 车联网/IoT 大规模设备接入 → S7
 - ★ 零售全渠道数据中台 → S8
 - ★ SaaS 多租户架构 → S9
+- ★ 客户自有认证接口接入网关统一鉴权 → S10
 - ○ 互联网建站 / 中小型业务 → 参考 architecture-templates.md T1
 - ○ AIGC 推理服务 → 参考 architecture-templates.md T3
 - ○ Landing Zone 落地 → 参考 caf-landing-zone.md
@@ -43,6 +44,7 @@
 - 汽车/制造 IoT → S7 + S5(数据湖)
 - 泛娱乐/媒体 → S6 + S1(弹性)
 - SaaS ISV → S9 + S3(AI Agent)
+- 自有认证/账号体系的 SaaS 与企业 → S10 + S9
 
 ---
 
@@ -288,9 +290,28 @@ Qwen模型层           向量存储             企业系统
 | Qwen3.7-Plus | 多模态智能体 | — | — | 看界面+操作应用+写代码（推理后付费限时8折） |
 
 > **Batch API**：所有模型 50% 折扣（异步批量）
-> **上下文缓存**：命中缓存部分享折扣（高频调用场景降本）
+> **上下文缓存（Context Cache）**：命中缓存的输入 Token 享折扣，高频调用场景降本提速（详见下方子表）
 > **Token Plan**：预购包进一步降本
 > **定价更新日期**：2026-06-17
+
+### 上下文缓存（Context Cache）：显式 vs 隐式 [官方]
+
+> 缓存请求间重复的**输入前缀**（系统提示/长文档/代码仓库/固定工具定义），减少重复 prefill → 降本 + 降首包延迟(TTFT)。仅影响**输入 Token** 计费，输出照常；账号级 + 模型级隔离不共享。两模式互斥，单请求只能用其一。
+
+| 维度 | 显式缓存 Explicit | 隐式缓存 Implicit |
+| --- | --- | --- |
+| 开启方式 | 主动：messages 里打 `"cache_control":{"type":"ephemeral"}` 标记 | 自动开启、无法关闭 |
+| 命中确定性 | 确定命中 | 不确定（系统判定，非 100%） |
+| 创建缓存计费 | 输入价 **125%** | 100%（不额外收费） |
+| 命中缓存计费 | 输入价 **10%** | 输入价 **20%**（百炼自研模型；glm-5.2/智谱系 25%、部分三方 8.33%~40% 不等） |
+| 最少缓存 Token | 1024 | 256（qwen3.7-max 系约 1000） |
+| 有效期 | **5 分钟**，命中后重置 | 不固定，系统定期清理 |
+| 匹配范围 | 从标记向前回溯 ≤20 个 content 块；单请求 ≤4 标记 | 前缀自动匹配 |
+
+**盈亏平衡**：显式创建多付 25%、命中省 90%，**5 分钟内被复用哪怕 1 次即回本**，复用越多越省。
+**选型**：高频且确定复用同一长前缀（代码仓库问答/固定长文档多轮/Function Calling 固定工具集/稳定 system prompt 多轮对话）→ 显式（命中价 10% < 隐式 20% 且延迟稳）；偶发/不确定复用 → 靠隐式自动兜底。
+**支持模型**（北京，2026-07）：qwen3.7-max/plus、qwen3-coder-plus/flash、qwen3-vl-plus/flash、deepseek-v3.2、kimi-k2.x、glm-5.1 等。
+**官方文档**：https://help.aliyun.com/zh/model-studio/context-cache
 
 ### RAG 向量库选型 [官方]
 
@@ -316,6 +337,8 @@ Qwen模型层           向量存储             企业系统
 | 工具集成 | MCP 协议 | 自定义 HTTP | 标准化工具链 → MCP |
 | 高可用 | AI Gateway 多模型容灾 | 单模型 | 生产级 SLA → AI Gateway |
 
+> **口径说明（2026-09-21）**：本节所称「AI Gateway / AI Gateway(Higress)」= 阿里云 **AI 网关**——云原生 API 网关面向 AI 原生应用的实例形态（Envoy/Higress 内核），提供专享实例与 Serverless 实例，按实例规格或 AI Credits 计费。产品谱系、能力清单、外部认证与计费详见 [aliyun-products.md 云原生 API 网关（APIG）/ AI 网关深度卡](aliyun-products.md#云原生-api-网关apig--ai-网关深度卡)。以下既有结论不变。
+
 ### 高可用 AI 架构模式 [实战-ATA]
 
 ```
@@ -334,6 +357,8 @@ Qwen模型层           向量存储             企业系统
 - 弹性：10 实例 → 200 实例（ACK + ECI）
 - 关键监控指标：QPS / P99 延迟 / Token 消耗 / 容灾触发次数
 
+> 上图与要点中的「AI Gateway (Higress)」即阿里云 AI 网关（云原生 API 网关的 AI 实例形态）；多模型路由/Fallback/语义缓存为其官方能力清单项 → 见 [aliyun-products.md 云原生 API 网关（APIG）/ AI 网关深度卡](aliyun-products.md#云原生-api-网关apig--ai-网关深度卡)。
+
 ### 成本估算（1000 并发 Agent 会话）[推断]
 
 假设：每次会话 10 轮，每轮 2000 input + 500 output token，使用 Qwen-Plus
@@ -343,9 +368,10 @@ Qwen模型层           向量存储             企业系统
 | 模型推理 | 1000会话 × 10轮 × (2000×0.8 + 500×2)/1M × 30天 | ~78,000 |
 | RAG 检索 | 10 RCU（500 QPS） | ~1,440 |
 | 知识库存储 | 500GB 旗舰版 | 含在 RCU 内 |
-| AI Gateway | Higress 实例 | ~2,000 |
-| **合计** | | **~81,000/月** |
+| AI Gateway | AI 网关专享实例 aigw.small.x1 包年包月（中国内地） | ~4,000 [官方] |
+| **合计** | | **~83,000/月** |
 
+> **2026-09-21 订正**：AI Gateway 行原为 [推断]「Higress 实例 ~2,000」，现按官方计费单价订正为 [官方]：AI 网关专享实例 aigw.small.x1 中国内地包年包月 3,997.5 元/月（按量 7.9335 元/小时）；另有数据处理量费（公网 0.037 / 私网 0.049 元/GB/小时）与 CDT 公网流量费未计入。若用云原生 API 网关 apigw.small.x1 则实例费仅 975 元/月。价目出处：raw/aliyun-docs/aliyun-docs-2026-09-21-aigw-billing-dedicated-instance.md（页面更新 2026-07-29）。
 > 换 Qwen-Turbo 可降 60% 模型成本（~31,000/月），适合简单问答场景。
 
 ### 客户案例参考
@@ -1337,6 +1363,128 @@ MSE Sentinel 规则配置：
 6. **MSE 限流规则爆炸** — 500 租户 × 20 接口 = 1 万条规则 → 按套餐模板批量生成，而非逐条配置
 7. **迁移割接夜** — DTS 增量同步延迟 >0 时切换 = 数据丢失 → 需等待增量追平(延迟 <1s) + 短暂停写(30s) + 验证 → 切换 DNS
 8. **租户数据删除** — 退租后需彻底清除(PIPL 合规)，shared-DB 需 DELETE WHERE tenant_id=X + 二次确认 + 审计日志
+
+---
+
+## S10：客户自有认证接口接入云原生API网关/AI网关做统一鉴权
+
+> **证据等级**：[官方] help.aliyun.com 云原生API网关/AI网关文档（raw/aliyun-docs/aliyun-docs-2026-09-21-*，16 篇 + 收口补充 MCP 文档 5 篇）+ [开源] Higress ext-auth README 与 main.go/config.go 源码摘录 + [规范] MCP 官方规范（raw/standards/）+ [实战] 合思信息 case 与 ATA 摘录 + [官方-竞品] 火山引擎对标 + [推断] 成本与取舍
+> **产品深度卡**：[aliyun-products.md 云原生 API 网关（APIG）/ AI 网关深度卡](aliyun-products.md#云原生-api-网关apig--ai-网关深度卡)（完整字段表/示例 YAML/FQDN 命名规则在此，本节只给方案骨架）
+
+### 场景特征
+
+- SaaS 多租户 / 企业自有账号体系：**认证逻辑在客户自有服务里**（自定义 Token 格式，非标准 JWT，无法在网关本地验签）
+- 诉求：在网关入口统一完成鉴权，避免每个后端服务各自接入认证服务；后端微服务零改造
+- 常见形态：客户已有 `/validateToken`、`/auth`、`/check` 类 HTTP 认证接口（SpringMVC/Go/Node 均可），部署在 ACK/K8s、ECS（DNS 域名或固定 IP）、或公网（需 NAT 网关出口）
+- 典型触发问法：「网关能不能调我们自己的认证服务？」「ext-auth 插件的 service_name 填什么？」
+
+### 核心产品组合
+
+```
+客户端(带自定义 Token)
+        │
+   云原生API网关 / AI 网关（专享实例；统一入口）
+        │
+        ├── 认证请求(/login) ──────────────► 客户认证服务（直接转发）
+        │
+        └── 业务请求(/order + Token)
+                │  网关截取 Path+Method+Token → 发鉴权请求
+                ▼
+        客户自建鉴权服务（必须先注册为网关「服务」：
+        │  DNS域名/固定地址/ACK/MSE Nacos 四种来源之一）
+        │  返回 200=放行；401/403=拒绝；
+        │  或统一 200 + x-mse-external-authz-check-result: true/false
+        ▼
+   后端微服务（ACK/SAE/ECS，零改造）
+        +  ARMS/SLS 可观测
+```
+
+### 两条路的取舍（A 路全局认证 vs B 路 ext-auth 插件）
+
+| 维度 | A 路：安全管理→全局认证鉴权→自建的鉴权服务 [官方] | B 路：插件市场 Higress `ext-auth`（外部认证）[开源] |
+| --- | --- | --- |
+| 作用域 | 实例级入口，授权范围靠黑白名单（域名/路径/Header）+ Envoy permission YAML 表达；路由级挂载官方未说明 | **路由级 / 域名级 / 实例级三级作用域**（插件规则） |
+| 鉴权路径 | 「鉴权API」= **前缀**，真实 Path = 鉴权API + 原始业务 Path | envoy 模式 `path_prefix` 前缀拼接；**固定路径认证接口用 forward_auth 模式 `path`** |
+| 超时 | 单位**秒**，默认 **10** | `timeout` 单位**毫秒**，默认 **1000** |
+| 失败策略 | 宽松模式（放行，官方建议）/ 严格模式（拒绝） | `failure_mode_allow`（默认 false=拒绝）+ `status_on_error`（默认 403）+ `max_request_body_bytes`（默认 10MB，超限 413 且优先于 failure_mode_allow） |
+| 结果判定 | 200 放行 / 401、403 直接回客户端 / 统一 200 场景用 `x-mse-external-authz-check-result` 头 | 2xx 放行 / 其他状态码拒绝并回传（可配 `allowed_client_headers`） |
+| 头透传 | 鉴权请求自动带 Host/Method/Path/Content-Length；响应头回填可配 | 自动带 `Authorization`；forward_auth 加 `X-Forwarded-*`；`allowed_upstream_headers` 回填后端 |
+| 实例形态限制 | Serverless 上是否可用**官方未说明** | **仅专享实例支持插件；Serverless 版装不了** [官方] → Serverless 客户只能走 A 路 |
+| 官方文档在架 | 三条产品线文档齐全（apig/aigw 配置表逐字一致，主控 diff 推断） | help.aliyun.com 认证插件清单页（6 个插件）**不含 ext-auth**；插件市场是否在架官方未说明 |
+
+**决策树**：
+```
+客户认证接口是固定路径（如统一 POST /auth）？
+├── 是 → B 路 forward_auth 模式（path + request_method）
+└── 否（按业务 Path 分路径鉴权）
+    ├── 需要按路由/域名分级挂载？ → B 路（envoy 模式 path_prefix）
+    ├── 实例是 Serverless 版 AI 网关？ → 只能 A 路（插件装不了）
+    └── 全局一层鉴权 + 白名单放行 /login、/health？ → A 路（简单条件白名单即可，最省事）
+```
+
+### 关键配置骨架
+
+**Step 1（两路共同前置）**：注册认证服务为网关「服务」[官方]
+- DNS 域名来源：服务地址 `<DNS域名>:<服务端口>`（外网地址**需配 NAT 网关**）；固定地址来源：`<IP>:<服务端口>`；TLS 三档（关闭默认/单向/双向 mTLS）
+- ACK 来源：先建「来源」——集群 ≥1.18（建议 1.28+）、**与网关同 VPC**、安全组开放服务端口
+- 服务 FQDN（B 路 `service_name` 用）：`<服务名>.dns` / `<服务名>.static` / `<服务名>.<分组>.<命名空间>.nacos` / `<服务名>.<命名空间>.svc.cluster.local`（官方 Go 插件文档第 462 行原文示例：`my-svc.dns, my-svc.static, service-provider.DEFAULT-GROUP.public.nacos, httpbin.my-ns.svc.cluster.local`）
+
+**Step 2A（A 路）**：实例 → 安全管理 → 全局认证鉴权 → 创建鉴权 → 类型「自建的鉴权服务」→ 选鉴权服务 + 鉴权API（前缀）+ Token位置（如 Authorization）→ 超时（秒）→ 宽松/严格 → 白名单放行 `/login`、`/health-check` → **创建后手动点「开启」才生效**
+
+**Step 2B（B 路）**：插件市场安装 ext-auth → 规则配置（选路由级/域名级/实例级）→ 最小配置（逐字自 Higress README，K8s 服务 `ext-auth.backend` 端口 8090）：
+
+```yaml
+http_service:
+  endpoint_mode: forward_auth   # 固定路径认证接口用 forward_auth；前缀拼接场景用 envoy + path_prefix
+  endpoint:
+    service_name: ext-auth.backend.svc.cluster.local   # 带服务类型后缀的完整 FQDN，非裸域名
+    service_port: 8090
+    path: /auth
+    request_method: POST
+  timeout: 1000                 # 单位毫秒（A 路是秒！）
+```
+
+### 避坑（方案级，字段级详见产品卡）
+
+1. 🔴 **超时单位差 1000 倍**：A 路秒（默认10）/ B 路毫秒（默认1000），从 A 路迁 B 路或抄示例时最容易配错——配 10 毫秒=鉴权瞬间超时全拒绝，配 1000 秒=请求长时间挂住
+2. 🔴 **Serverless 版 AI 网关装不了插件**（官方原文），售前先问实例形态，Serverless 客户方案里不要出现 ext-auth
+3. 🔴 **前缀拼接语义**：A 路鉴权API `/validateToken` + 业务 `/order` = 实际请求 `/validateToken/order`，客户认证服务必须按前缀路由处理（SpringMVC 用 `@RequestMapping("/check/")` 接 `/check/**`）；固定路径接口在 B 路必须切 forward_auth 模式
+4. `service_name` 填裸域名/裸服务名会找不到服务集群——必须是网关「服务」里已注册的带类型后缀 FQDN
+5. `.static` 服务端口口径存疑（官方仅注释「逻辑端口是80」，实际监听 8080 怎么填官方未说明）→ 优先 DNS 域名来源
+6. 鉴权服务仅支持 HTTP（不支持 Dubbo）；多端口 K8s Service 默认取第一个端口，用其他端口需另建只含目标端口的 Service
+7. 统一返 200 的认证服务必须配 `x-mse-external-authz-check-result` 头，否则 A 路一律放行
+8. A 路建完忘点「开启」= 白配；宽松模式=鉴权服务故障时**放行**（安全敏感业务慎用，或 B 路保持 failure_mode_allow=false）
+
+### 成本量级 [官方+推断]
+
+| 组件 | 规格 | 月成本(CNY) |
+| --- | --- | --- |
+| 云原生API网关专享实例 | apigw.small.x1 包月（中国内地，首购 6 折） | ~975（按量 1.935 元/h） |
+| 或 AI 网关专享实例 | aigw.small.x1 包月（中国内地） | ~4,000（3,997.5） |
+| 数据处理量 | 公网 0.037 / 私网 0.049 元/GB/小时（按小时结算请求+响应量） | 例：10TB/月公网均匀 ≈ 14.2GB/h × 0.037 × 720h ≈ 380 元/月 [推断] |
+| 公网流量 | CDT 统一计费 | 另计 |
+| 认证服务自身 | 客户已有（ACK/ECS 内） | ~0 增量 |
+| ext-auth 插件 / 全局认证鉴权功能 | — | 不单独收费（官方计费项仅实例+数据处理+公网流量） |
+
+> 量级判断：网关侧增量成本主要是实例费，中小流量（<5000 QPS）apigw.small.x1~x2 即可，月成本千元级；鉴权调用会使每请求增加一次内部 HTTP 往返（延迟 +几 ms～几十 ms，取决于认证服务），高 QPS 场景建议认证服务与网关同 VPC 并做结果缓存 [推断]。
+
+### 实战案例（2026-09 费控 SaaS / MCP 上架）[实战]
+
+> 客户：合思信息（原易快报，费控报销 SaaS，画像见 [company-profiles.md](company-profiles.md)）。**脱敏约定**：本案例不落客户 token/PAT；客户测试环境真实域名一律以 `<客户认证服务域名>` 占位。客户同时在评估火山引擎（对标见 [competitor-cloud.md 火山 API 网关/AI 网关节](competitor-cloud.md)）。
+
+- **症状**：走 A 路「自建认证鉴权」，配完认证接口后鉴权请求返 **404**
+- **根因**：A 路鉴权API是**前缀拼接**语义——官方原文「真实Path是鉴权API加上原始业务请求的Path后的结果，即/validateToken/order」；而客户认证接口是**精确匹配**路径，拼接后的长路径自然 404
+- **客户硬约束**：拒绝改自有接口（客户原话：「我换个网关我还能继续用，而不是我的 http 服务还得迎合你们的改动吧」）
+- **解法**：B 路 ext-auth + `endpoint_mode: forward_auth` + 固定 `path` + `request_method: GET`——鉴权请求按固定路径原样发出，原始路径走 `X-Forwarded-Uri` 头（含 query），`Authorization` 头**无条件透传**（源码级证据 → 产品卡「forward_auth 源码级细节」节）→ **客户认证接口零改动**
+- **MCP 特有维度**：`initialize`/`tools/list`/`tools/call` 在 HTTP 层同 path 同 method(POST)，网关物理上无法区分 [规范+推断] → 外部认证要拦全部方法应挂**域名级**（不要依赖实例级兜底，见产品卡「引用限定」）；**工具级消费者认证会过滤 tools/list**（官方《调试MCP服务》第 29 行原文：HTTP转MCP 场景「获取工具列表只能看到和调用有权限的工具」）
+- **兜底三选**（均 [推断]，未实测）：① 双层——消费者认证（API Key 放独立头/query，`ApiKeyIdentityConfig.apikeySource` 支持 Header/Query String）+ ext-auth 内层回调客户 PAT 校验；② 鉴权下沉到客户自有 MCP 后端；③ 自定义 Wasm 插件
+- **上线前必测清单** [存疑]：商业版 ext-auth 是否支持 forward_auth；`Authorization: Bearer <凭证>` 前缀是否被客户 verify 接口容忍（MCP 标准走 Bearer，客户接口可能期望裸 PAT）；HTTPS/TLS 到 443 是否可行（官方仅说自定义 Wasm 出站「目前仅支持 http 调用」）
+
+### 客户案例参考
+
+- 本次蒸馏源起：客户咨询「AI 网关如何调用自有认证接口 + ext-auth service_name 怎么填」（2026-09-21 专项取证，见 inbox）[实战]
+- **2026-09 合思信息（费控 SaaS）MCP 上架 + 统一鉴权 case → 上方「实战案例」节**（A 路 404 根因 + forward_auth 零改动解法 + MCP 方法不可区分 + 双层兜底）[实战]
+- SaaS 多租户统一鉴权组合 → S9（租户路由/限流）+ 本方案（认证前置）
 
 ---
 
