@@ -516,7 +516,7 @@
 ## 火山引擎 API 网关 / AI 网关（MCP + 外部认证）对标 [官方-竞品]（2026-09-21 收口补充）
 
 > 来源：火山引擎文档站 4 篇全文（经 getDocDetail API 取 MDContent，归档 raw/competitor/competitor-2026-09-21-volc-apig-*.md）：MCP 服务（docs/6569/1816086，更新 2026-07-21）、外部认证鉴权（docs/6569/1798159，更新 2026-08-10）、安全与认证概述（docs/6569/2502428）、什么是 API 网关（docs/6569/82992）。产品路径：火山引擎 **API 网关 → AI 网关 → MCP 服务**，控制台 `console.volcengine.com/veapig`。
-> 阿里云侧对位 → [aliyun-products.md 云原生 API 网关（APIG）/ AI 网关深度卡](aliyun-products.md#云原生-api-网关apig--ai-网关深度卡)（MCP 维度节）；方案侧 → [cloud-solutions.md S10](cloud-solutions.md)。
+> 阿里云侧对位 → [aliyun-products.md 云原生 API 网关（APIG）/ AI 网关深度卡](aliyun-products.md#云原生-api-网关apig--ai-网关深度卡)（MCP 维度节）；方案侧 → [cloud-solutions.md S11](cloud-solutions.md)。
 
 ### MCP 服务能力对位
 

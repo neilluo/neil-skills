@@ -1,0 +1,38 @@
+# SHA256 只对「原始正文」计算，不含本目录快照的 7 字段 frontmatter。
+# 因此 `shasum -a 256 -c SHA256SUMS.txt` 会对全部文件报 FAILED —— 这是设计使然，非快照损坏。
+# 正确校验方法：剥离前 10 行 frontmatter 后重算，示例：
+#   tail -n +11 <file>.md | shasum -a 256
+# （与既有 meoo/ 先例的差异：meoo 快照无 frontmatter，故其 SHA256SUMS.txt 可直接 -c 验过。）
+146f3385731942bd220eb3202be124157db834316152d3dd055e8361a913d88c  acentcore-collaboration-control-face-exemption-description.md
+6d7ba4a08df6b5088a6f4cf1e5d47c75e2bc43fa6bff951aa2ee374588ba62b1  agentcore-basic-concepts.md
+6dcf50cfe73e23a7d45231011b204ba420c524a0d4a104cee9e9ec4a8dbc3ca3  agentcore-billing-instructions.md
+7212d3cfde13c172127d8bc2cd53289a63763c773160b89677e92e65a5f86e42  agentteams-has-been-migrated-to-agentcore.md
+c0217c0195b6f66a05a4a8a3fe42fa689693646d3200b6406590cb89bbb5a340  service-linked-role-1.md
+d82f21a98d7198bf9e48f202d6ae1ec092d8ef9226988da0ce40b5314a7fb4ef  agentcore-intelligent-agent-development-and-governance-platform-service-level-agreement.md
+da1afa81070d2fd731b5efed233fcceda0313c2b051d516578f1c287dc546720  agentcore-billing-activation.md
+e6c8a6f1381832090809d0c404af94fc99b63e722402d751aefa7e10940a12ba  agentcore-product-overview.md
+10fdf88b2ef490d8fdd308f234a6eafd923de7869d1c666d5f280f4180333049  operating-guide.md
+45c499d2930a13f1c0cb991cc5ac75687f97af0deb108fddcf19d029c4cff188  view-overview.md
+d1c5a1292b8bb789c8a3c776c6c3a10f49bf88c5b1d34bce4d5261dbc94caabe  manage-workspace.md
+28b4dab184e41754ff06376bf7e8c4801329682fc29cb2ff61d1ab84f9937a9a  manage-connectors.md
+e3d0b72debf609002a36fd1f4fc6ac03a3310bec4da10b10554a6306cf5952c3  manage-agents.md
+e9f36b6ac3593578b3f06e67ba29274ca8459ce407c6a5688305914bd6ecfbb2  high-code-agent-deployment-guide.md
+730c3990f85f3f097f2226aa2a76da4facdc0ba30a76b4e659df7a4cc69a175d  guidelines-for-the-use-of-local-nanoagent.md
+6a7b1cc857cd765e0e187bd402b0d6f7c4b47254de9e9b5f7536e4f7a70388c7  manage-agent-templates.md
+bd40a4e2a4d2aa07020b5d5f4d50dd3b17c51ac50ad6e8828b42a77bff927687  manage-memory-space.md
+479519ca2f7fd54455a7770887f36a7c49720725e786bb81a8b63a2c3c379be9  model-management.md
+c1bfb9dddeffcf4c32134deafeed5c06c86dc22b502240c5204cb3e9b489cae2  manage-skill.md
+30077fba47fde74c03b11063967e800372a70d197a6186794e3dbde64fd420d1  managing-the-mcp-server.md
+b9c17cb8661f3dd797afd5617b9423e0742bba3eb9043d4c8ff90bf4624d0c1a  manage-credentials.md
+cee4716635e1d9bf35fd345ffacb9471231b5cf01b550f5410bdbba9c55e0bc2  set-up-team-collaboration.md
+a25aee7981c5025fcd665292bb6624d718b4928e9608181595d47e381d812e53  use-team-web-to-set-tasks.md
+3ea94e3c220ed640d86a4fcdcbc82a08077023a7cc6c0854ab737f7bbf7cb02e  manage-users.md
+bb3298f78cdb61691e28838dd32c0db552382aff808668d982307cda399e9145  integrate-the-agent-into-the-im-channel.md
+53b23af2ab8c56a870788d22e15799086bea5c9896cc6002d84f6d728071b7f1  agentcore-configure-dingtalk-account-integration.md
+182d7198a41f9a0b30073b10ca9eb418007806fb15145c11357e703694c239c1  configure-dingtalk-account-integration.md
+189672449a44a21a46eeedea04070123a36a9dc1b624b05f27552cd6b33323be  magic-quick-start-1.md
+0b1ead9ec00def21c03e6235499778ac155009791ff1fb59c699a0b9f4c6eedb  agentcore-sdk-overview.md
+05c7c55f20fff4cf248102e1019b6bdfd059eca28e1650193fccc330c3981d2c  agentcore-python-sdk-user-guide.md
+c83f87c7062baa2242a7a8e7577e0d2dcb11ea5b3b9716a8e910a915f02f2459  agentcore-node-js-sdk-user-guide.md
+e74085330d8a8250db88951a7be06475887a0fac1afda87b24f0fdf1b87fa0df  create-a-high-code-agent-using-the-python-sdk.md
+29c513bef5b3152374a454a4bd9bb624c406c934dfd6703a091900bba8916ef2  sla-agreement-fulltext-terms-alicdn.md

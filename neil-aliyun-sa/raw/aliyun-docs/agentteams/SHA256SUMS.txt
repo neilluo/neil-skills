@@ -1,0 +1,23 @@
+# SHA256 只对「原始正文」计算，不含本目录快照的 7 字段 frontmatter。
+# 因此 `shasum -a 256 -c SHA256SUMS.txt` 会对全部文件报 FAILED —— 这是设计使然，非快照损坏。
+# 正确校验方法：剥离前 10 行 frontmatter 后重算，示例：
+#   tail -n +11 <file>.md | shasum -a 256
+# （与既有 meoo/ 先例的差异：meoo 快照无 frontmatter，故其 SHA256SUMS.txt 可直接 -c 验过。）
+4e6ce813e47fefb10f1b061559500926f89fe42ecb5c1f03674ca02b69d50fc0  product-overview-1.md
+222fe8de6e22544903527255bd3884422c0aa1185f65351584b9f93457f04b8c  magic-console-product-overview.md
+3da60590c2e2f3c7e0b85856a180a62aff60552fbea8d72d1d666d60e7bc9e4f  billings-of-agentteams.md
+8817c6c01c7809f408b7d432505c4cdd9db826f664d1d3ad03b745bd6d0e8e3f  agentteams-has-been-migrated-to-agentcore.md
+49e201a0617e15ea12e4333b8b44e3d649ddd9e6dfc21af73f5c415636bae85a  magic-quick-start.md
+50f157d4bf39dbae893d93e7cb448e2ff54519147e363e80655a4d079b44069b  operating-guide-1.md
+ccaf0dee78b42f8825e2f8f8b8f567935332ffeaebf078c881ee3391c2e02ad7  view-dashboards-and-monitoring-1.md
+a3e371f6b17207613997d41b8c64eabf3acdfcaf828225b57a7e12534af58747  manage-worker-templates-1.md
+f9cd226f515c1b8d846a77b7daf7520d6c7f27537aa731a5326bb178fe656341  local-worker-user-guide.md
+595b86ec7c789fece535395797ae3b18775da2b47fc248649af88c82f636c79e  management-models-and-suppliers-1.md
+e8eb2118b88163053c72134fa46c33029d1136ec78904c3af1f770324dc07304  management-skill.md
+2bde9737297723d1d8a2ea3c55546ed444df716fe5b8f912eae207bf9e5219fb  managing-the-mcp-server.md
+45705c93794f43c2842de389ca57b46900c423bc9e8103339ca95d155d2aa56b  manage-workers-and-worker-teams.md
+3969b5fe8324ea2998beeec48ecf0986fc39943def267e330fd3ae262aa3a2a0  manage-users.md
+ecf6e1a82451023909dd658f46561b2d9cca4894fccac71272741fc35bd8aec4  configure-dingtalk-account-integration.md
+2ec427eb0d9036121caf09c08dd04f163cb06463dc0a6a207dbeee6230d93b97  agentteams-dingtalk-channel-configuration-guide.md
+996096eea55b7cebddad751b058eb1b59b1bd51fa62a31b7e86b768122ea9390  service-linked-role-1.md
+0c12a95c6f0f5385a3c8ab875a5f9b152cd18cb1f4970c357ea93a0407d30501  manage-instances-1.md

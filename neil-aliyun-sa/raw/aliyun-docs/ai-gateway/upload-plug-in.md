@@ -1,0 +1,39 @@
+---
+source_url: https://help.aliyun.com/zh/api-gateway/ai-gateway/user-guide/upload-plug-in
+fetch_date: 2026-09-21
+product: AI Gateway
+slug: upload-plug-in
+body_sha256: 703e12e8332c9fd2cb4a4eb18938ac8d5ac76e1860261e25fe66d47f8ec735c2
+body_bytes: 10444
+migration_status: current
+---
+
+您开发的插件可以通过发布插件的方式上传到插件市场。只有当前主账号或具有AI网关权限的子账号可以看到并使用该插件。插件启用方式和平台提供插件一致。  
+
+## 操作步骤
+1. 登录[AI网关控制台](https://apigw.console.aliyun.com/#/cn-hangzhou/ai-gateway)。
+
+2. 在左侧导航栏，选择**插件**，并在顶部菜单栏选择地域。
+
+3. 在**插件市场** 页面的右上角单击**发布插件**。
+
+4. 在**发布插件** 面板，填写插件参数信息，单击**上传**，等待插件发布成功（此过程可能需要30秒左右）。
+
+   <table> <thead> <tr> <td><p><b>参数</b></p></td> <td><p><b>描述</b></p></td> </tr> </thead> <colgroup></colgroup> <colgroup></colgroup> <tbody> <tr> <td><p><b>选择语言</b></p></td> <td><p>选择编写插件时使用的开发语言。</p></td> </tr> <tr> <td><p><b>插件标识</b></p></td> <td><p>设置插件的英文标识（唯一标识）。</p></td> </tr> <tr> <td><p><b>插件名称</b></p></td> <td><p>设置插件的中文名称。</p></td> </tr> <tr> <td><p><b>插件描述</b></p></td> <td><p>填写用途说明，会显示在创建完成后的插件卡片中。</p></td> </tr> <tr> <td><p><b>版本描述</b></p></td> <td><p>填写插件的版本描述信息。</p></td> </tr> <tr> <td><p><b>WASM文件</b></p></td> <td><p>上传本地编译构建生成的插件二进制文件。文件名需要包含 ".wasm" 后缀。</p></td> </tr> <tr> <td><p><b>执行阶段</b></p></td> <td><p>阶段处理顺序：<b>认证阶段</b> \&gt; <b>鉴权阶段</b> \&gt; <b>统计阶段</b> \&gt; <b>默认阶段</b>。若不依赖其他插件执行顺序，填写默认阶段即可。</p></td> </tr> <tr> <td><p><b>执行优先级</b></p></td> <td><p>控制执行阶段内的优先级，数字越大优先级越高。若需定制，建议填写10的整数倍，预留好空间。</p></td> </tr> <tr> <td><p><b>适配网关版本</b></p></td> <td><p>选择<b>任意版本</b>或<b>指定版本</b>。</p><p><b>任意版本</b>：可以安装到任意版本的网关。</p><p><b>指定版本</b>：仅可以安装到指定版本（含）之后的网关版本。</p></td> </tr> </tbody> </table>
+
+## 插件执行顺序说明
+**说明**
+
+按照执行阶段和执行优先级，可以确定多个插件在处理请求和应答时的相对顺序。需要注意的是，处理客户端请求的顺序和处理后端应答的顺序是相反的，即越早处理请求的插件，越晚处理应答。  
+插件执行顺序由插件执行阶段和插件执行优先级两个参数共同决定，对请求和应答的处理顺序如下图所示：![插件执行顺序](https://help-static-aliyun-doc.aliyuncs.com/assets/img/zh-CN/6827111561/p434363.png)
+
+在平台提供插件的详情中，可以看到执行阶段和执行优先级的信息，如果希望在特定平台插件执行前后插入自定义插件，可以配置自定义插件的插件执行阶段和插件执行优先级。
+
+## 插件与策略优先级
+以下插件与策略由上到下执行优先级依次降低。
+<table> <thead> <tr> <td><p><b>名称</b></p></td> <td><p><b>类型</b></p></td> <td><p><b>执行阶段</b></p></td> <td><p><b>优先级</b></p></td> <td><p><b>备注</b></p></td> </tr> </thead> <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup> <tbody> <tr> <td><p>IP黑白名单</p></td> <td><p>策略</p></td> <td><p></p></td> <td><p></p></td> <td><p>RBAC Filter</p></td> </tr> <tr> <td><p>http-real-ip</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>980</p></td> <td><p>流量管控系列插件</p></td> </tr> <tr> <td><p>ModelRouter</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>900</p></td> <td><p>AI-API 内置</p></td> </tr> <tr> <td><p>ModelMapper</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>800</p></td> <td><p>AI-API 内置</p></td> </tr> <tr> <td><p>前端灰度</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>450</p></td> <td><p>传输协议系列插件</p></td> </tr> <tr> <td><p>IP地理位置</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>440</p></td> <td><p>传输协议系列插件</p></td> </tr> <tr> <td><p>DeGraphQL</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>430</p></td> <td><p>传输协议系列插件</p></td> </tr> <tr> <td><p>浏览器缓存控制</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>420</p></td> <td><p>传输协议系列插件</p></td> </tr> <tr> <td><p>请求/响应转换</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>410</p></td> <td><p>传输协议系列插件</p></td> </tr> <tr> <td><p>OAuth2认证</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>350</p></td> <td><p>认证鉴权系列插件</p></td> </tr> <tr> <td><p>JWT认证</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>340</p></td> <td><p>认证鉴权系列插件</p></td> </tr> <tr> <td><p>HMAC认证</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>330</p></td> <td><p>认证鉴权系列插件</p></td> </tr> <tr> <td><p>Basic认证</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>320</p></td> <td><p>认证鉴权系列插件</p></td> </tr> <tr> <td><p>Key认证</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>310</p></td> <td><p>认证鉴权系列插件</p></td> </tr> <tr> <td><p>外部认证</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>300</p></td> <td><p>认证鉴权系列插件</p></td> </tr> <tr> <td><p>OPA</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>225</p></td> <td><p>认证鉴权系列插件</p></td> </tr> <tr> <td><p>请求校验</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>220</p></td> <td><p>传输协议系列插件</p></td> </tr> <tr> <td><p>IP限制</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>210</p></td> <td><p>安全防护系列插件</p></td> </tr> <tr> <td><p>JWT Logout</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>50</p></td> <td><p>认证鉴权系列插件</p></td> </tr> <tr> <td><p>通用响应缓存</p></td> <td><p>插件</p></td> <td><p>认证阶段</p></td> <td><p>10</p></td> <td><p>传输协议系列插件</p></td> </tr> <tr> <td><p>跨域资源共享</p></td> <td><p>插件</p></td> <td><p>鉴权阶段</p></td> <td><p>340</p></td> <td><p>安全防护系列插件</p></td> </tr> <tr> <td><p>WAF防护</p></td> <td><p>插件</p></td> <td><p>鉴权阶段</p></td> <td><p>330</p></td> <td><p>安全防护系列插件</p></td> </tr> <tr> <td><p>请求屏蔽</p></td> <td><p>插件</p></td> <td><p>鉴权阶段</p></td> <td><p>320</p></td> <td><p>安全防护系列插件</p></td> </tr> <tr> <td><p>机器人拦截</p></td> <td><p>插件</p></td> <td><p>鉴权阶段</p></td> <td><p>310</p></td> <td><p>安全防护系列插件</p></td> </tr> <tr> <td><p>ai-data-masking</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>991</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-statistics</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>990</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-security-guard</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>850</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-cache</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>800</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-quota</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>750</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-intent</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>700</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-history</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>650</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-token-ratelimit</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>600</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-prompt-template</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>500</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-prompt-decorator</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>450</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-network-search</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>440</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-transformer</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>410</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-rag</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>405</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>traffic-tag</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>400</p></td> <td><p>流量管控系列插件</p></td> </tr> <tr> <td><p>ai-json</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>150</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>ai-proxy</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>110</p></td> <td><p>AI系列插件</p></td> </tr> <tr> <td><p>canary-header</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>100</p></td> <td><p>流量管控系列插件</p></td> </tr> <tr> <td><p>基于Key集群限流</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>20</p></td> <td><p>流量管控系列插件</p></td> </tr> <tr> <td><p>基于Key限流</p></td> <td><p>插件</p></td> <td><p>默认阶段</p></td> <td><p>10</p></td> <td><p>流量管控系列插件</p></td> </tr> <tr> <td><p>并发控制/流量控制/熔断</p></td> <td><p>策略</p></td> <td><p></p></td> <td><p></p></td> <td><p>Sentinel Filter</p></td> </tr> <tr> <td><p>超时/重试/流量复制/Header修改/HTTP重写/跨域</p></td> <td><p>策略</p></td> <td><p></p></td> <td><p></p></td> <td><p>Router Filter</p></td> </tr> </tbody> </table>
+
+## 常见问题
+### 导致插件发布失败的原因可能是什么？
+
+一般可能是生成的Wasm文件二进制格式不合法。关于在本地环境成功加载该Wasm文件的Demo示例，请参见[使用Go语言开发网关插件](https://help.aliyun.com/document_detail/2882258.html)。

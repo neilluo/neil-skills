@@ -1,15 +1,15 @@
-# 自动化回归报告 — 2026-09-21 12:12 
+# 自动化回归报告 — 2026-09-21 11:28 
 
 > **测试器**：scripts/run-regression.py
-> **用例库**：tests/regression-cases.yaml (v1.3)
-> **覆盖文件**：13 个 markdown / 共 235097 字符
+> **用例库**：tests/regression-cases.yaml (v1.6)
+> **覆盖文件**：16 个 markdown / 共 455676 字符
 > **PASS 阈值**：命中率 ≥ 85%
 
 ## 总览
 
 - **整体命中率**：100.0%
-- **PASS 数**：30/30
-- **FAIL 数**：0/30
+- **PASS 数**：62/62
+- **FAIL 数**：0/62
 
 ## 用例结果矩阵
 
@@ -24,7 +24,7 @@
 | T07 | D | 教育行业上云特征 | 6/6 | 100% | ✅ PASS |
 | T08 | B | 车联网 5000 万设备接入 | 7/7 | 100% | ✅ PASS |
 | T09 | C | MaxCompute vs EMR Spark 选型 | 5/5 | 100% | ✅ PASS |
-| T10 | F | ALB vs MSE 网关 vs API Gateway | 9/9 | 100% | ✅ PASS |
+| T10 | F | ALB vs MSE 网关 vs API Gateway | 5/5 | 100% | ✅ PASS |
 | BD01 | B | 自建 Hadoop/Hive 500节点迁 MaxCompute+EMR | 7/7 | 100% | ✅ PASS |
 | BD02 | C | HDFS 500TB 迁 OSS 选型 | 5/5 | 100% | ✅ PASS |
 | BD03 | B | 自建 Kafka 迁云 + Flink 实时链路 | 5/5 | 100% | ✅ PASS |
@@ -41,10 +41,42 @@
 | AI01 | B | 企业 AI Agent 平台方案（百炼+RAG+多Agent） | 6/6 | 100% | ✅ PASS |
 | AI02 | C | AIGC 内容生产选型（万相/HappyHorse/CosyVoice） | 5/5 | 100% | ✅ PASS |
 | AI03 | F | 百炼 vs PAI-EAS 成本交叉点 30秒判断 | 5/5 | 100% | ✅ PASS |
-| GW01 | C | AI网关/云原生API网关 外部认证 ext-auth service_name 与 FQDN 命名规则 | 8/8 | 100% | ✅ PASS |
-| GW02 | F | API 网关三种形态产品谱系与原API网关 EOL | 6/6 | 100% | ✅ PASS |
-| GW03 | C | Serverless 版 AI 网关不支持插件的硬限制与三级作用域 | 6/6 | 100% | ✅ PASS |
-| GW04 | B | 网关外部认证 A路(全局认证鉴权) vs B路(ext-auth) 选型与超时单位陷阱 | 9/9 | 100% | ✅ PASS |
+| PP01 | C | PolarDB 家族购买路径核验完整性 | 6/6 | 100% | ✅ PASS |
+| PP02 | C | RDS 家族购买路径核验完整性 + Serverless 下线 | 6/6 | 100% | ✅ PASS |
+| PP03 | C | ADB / MaxCompute / Hologres 购买路径核验 | 7/7 | 100% | ✅ PASS |
+| PP04 | C | ClickHouse 双版本购买路径核验 | 6/6 | 100% | ✅ PASS |
+| PP05 | C | Lindorm 购买路径 + Serverless 无法新购 | 6/6 | 100% | ✅ PASS |
+| PP06 | C | EMR 家族购买路径核验 + HA Master 3 起步 | 6/6 | 100% | ✅ PASS |
+| PP07 | C | Flink 全托管无作业级 Serverless | 5/5 | 100% | ✅ PASS |
+| PP08 | C | DataWorks 资源组购买路径核验 | 5/5 | 100% | ✅ PASS |
+| PP09 | C | Tair / OSS / PAI / 百炼 购买路径核验 | 6/6 | 100% | ✅ PASS |
+| PP10 | C | 采购路径核验清单结构完整性（红色预警清单 + 匿名核验边界） | 9/9 | 100% | ✅ PASS |
+| RG01 | C | 百炼知识库（RAG）规格计费与权限红线 | 8/8 | 100% | ✅ PASS |
+| RG02 | C | 向量检索 / RAG 检索引擎 12 条产品线选型 | 9/9 | 100% | ✅ PASS |
+| RG03 | B | 私有化部署路线（PAI-EAS 独享 GPU / ACS / 一体机） | 8/8 | 100% | ✅ PASS |
+| RG04 | B | S10 企业内部知识库（员工侧 RAG）场景方案 | 10/10 | 100% | ✅ PASS |
+| RG05 | C | 核验项 C13/C14 与文档解析计费口径 | 6/6 | 100% | ✅ PASS |
+| OL01 | C | 六引擎 OLAP 场景选型（ADB/Hologres/Doris/SelectDB/StarRocks/ClickHouse） | 9/9 | 100% | ✅ PASS |
+| OL02 | C | OLAP 选型关键版本门槛与厂商 benchmark 存疑清单 | 5/5 | 100% | ✅ PASS |
+| OL03 | C | 阿里云上开源 OLAP 售卖映射与内部实战口径 | 5/5 | 100% | ✅ PASS |
+| NET01 | C | 出云流量费计费模型：带宽 vs 流量双模式 + CDT 统一出账 | 7/7 | 100% | ✅ PASS |
+| NET02 | C | 出云流量避坑：BGP 精品无免费额度与买带宽仍收流量费排查 | 5/5 | 100% | ✅ PASS |
+| AC01 | C | AgentCore 产品归属与术语（三个平级产品 / AgentTeams 一名两指 / 本地纳管 Agent） | 14/14 | 100% | ✅ PASS |
+| AC02 | C | AgentCore 五个计费项单价（算力/网关/存储 CU + 协作管控面门槛费 + CDT 出账） | 8/8 | 100% | ✅ PASS |
+| AC03 | C | CU 换算公式与「换算示例 ≠ 规格菜单」红线 | 7/7 | 100% | ✅ PASS |
+| AC04 | C | 地域价表只有内地一行同价 + 新加坡 ap-southeast-1 无单价禁外推 | 7/7 | 100% | ✅ PASS |
+| AC05 | C | 三项依赖产品（CMS/PrivateLink/SchedulerX3）→ AgentCore 账单 ≠ 全成本 | 7/7 | 100% | ✅ PASS |
+| AC06 | C | 报价三硬缺口（新加坡单价 / 数据处理量单价 / 算力 CU 规格档位） | 6/6 | 100% | ✅ PASS |
+| AC07 | C | 协作管控面限免活动窗口与边界（强时效，2026-10-18 后必须复核） | 8/8 | 100% | ✅ PASS |
+| AC08 | C | 限免期实例连续 30 天无操作即停用回收且不可逆 | 6/6 | 100% | ✅ PASS |
+| AC09 | C | SLA 可用率 99.9%（非 99.95/99.99）+ 两条必说限定词 | 7/7 | 100% | ✅ PASS |
+| AC10 | C | SLA 赔偿三档 15%/30%/100% + Workspace 服务单元 + 出账金额基数 + 2 个月时限 + 例外第 (7) 条 | 13/13 | 100% | ✅ PASS |
+| AC11 | C | 账号集成 30 用户硬上限 / 无微信账号集成 / 无 LDAP-SCIM 目录同步 | 8/8 | 100% | ✅ PASS |
+| AC12 | C | slug 陷阱：configure-dingtalk-account-integration 正文其实是飞书 | 6/6 | 100% | ✅ PASS |
+| AC13 | C | AgentCore 六条数值型配额（SubAgent/记忆空间/MCP 描述/纳管并发/VPC 交换机） | 7/7 | 100% | ✅ PASS |
+| AC14 | C | SLR 权限面排障：RAM 搜 Magic / magic.aliyuncs.com / hiclaw-* / 158 条 Action | 8/8 | 100% | ✅ PASS |
+| AC15 | C | 未商用能力清单 + AgentCore 不是公测产品（严禁据 AgentTeams 公测免费外推） | 8/8 | 100% | ✅ PASS |
+| AC16 | C | AgentTeams 迁移：不自动 / 交互式 6 步 / 5 类不迁 / 术语映射仅 1 条有证据 / 四项缺口 | 14/14 | 100% | ✅ PASS |
 
 ## 详细命中明细
 
@@ -158,10 +190,6 @@
 | `ALB` | ✅ |
 | `云原生网关` | ✅ |
 | `API 网关` | ✅ |
-| `云原生API网关` | ✅ |
-| `AI 网关` | ✅ |
-| `原 API 网关` | ✅ |
-| `三种形态` | ✅ |
 
 ### BD01 — 自建 Hadoop/Hive 500节点迁 MaxCompute+EMR  [PASS]
 
@@ -330,189 +358,471 @@
 | `GPU` | ✅ |
 | `私有部署` | ✅ |
 
-### GW01 — AI网关/云原生API网关 外部认证 ext-auth service_name 与 FQDN 命名规则  [PASS]
+### PP01 — PolarDB 家族购买路径核验完整性  [PASS]
 
 | 关键词 | 命中 |
 | --- | --- |
-| `ext-auth` | ✅ |
-| `service_name` | ✅ |
-| `FQDN` | ✅ |
-| `my-svc.dns` | ✅ |
-| `svc.cluster.local` | ✅ |
-| `forward_auth` | ✅ |
-| `path_prefix` | ✅ |
-| `外部认证` | ✅ |
+| `PolarDB MySQL 集群版` | ✅ |
+| `PolarDB MySQL Serverless` | ✅ |
+| `PolarDB-X` | ✅ |
+| `polardb-buy.aliyun.com` | ✅ |
+| `drds_polarxpre_public_cn` | ✅ |
+| `不支持转包月` | ✅ |
 
-### GW02 — API 网关三种形态产品谱系与原API网关 EOL  [PASS]
+### PP02 — RDS 家族购买路径核验完整性 + Serverless 下线  [PASS]
 
 | 关键词 | 命中 |
 | --- | --- |
-| `云原生 API 网关` | ✅ |
-| `AI 网关` | ✅ |
-| `原 API 网关` | ✅ |
-| `2026-08-23` | ✅ |
-| `2027-09-21` | ✅ |
-| `全面下线` | ✅ |
+| `RDS MySQL 高可用版` | ✅ |
+| `RDS MySQL Serverless` | ✅ |
+| `RDS PostgreSQL Serverless` | ✅ |
+| `RDS SQL Server Serverless` | ✅ |
+| `已停售` | ✅ |
+| `无法转化为包年包月` | ✅ |
 
-### GW03 — Serverless 版 AI 网关不支持插件的硬限制与三级作用域  [PASS]
-
-| 关键词 | 命中 |
-| --- | --- |
-| `Serverless版不支持` | ✅ |
-| `专享实例` | ✅ |
-| `插件市场` | ✅ |
-| `路由级` | ✅ |
-| `域名级` | ✅ |
-| `插件规则` | ✅ |
-
-### GW04 — 网关外部认证 A路(全局认证鉴权) vs B路(ext-auth) 选型与超时单位陷阱  [PASS]
+### PP03 — ADB / MaxCompute / Hologres 购买路径核验  [PASS]
 
 | 关键词 | 命中 |
 | --- | --- |
-| `全局认证鉴权` | ✅ |
-| `自建的鉴权服务` | ✅ |
-| `鉴权API` | ✅ |
-| `x-mse-external-authz-check-result` | ✅ |
-| `endpoint_mode` | ✅ |
-| `failure_mode_allow` | ✅ |
-| `status_on_error` | ✅ |
-| `宽松模式` | ✅ |
+| `ADB MySQL 企业版` | ✅ |
+| `ADB PostgreSQL` | ✅ |
+| `GreenplumPre` | ✅ |
+| `MaxCompute` | ✅ |
+| `odpsplus` | ✅ |
+| `Hologres 计算组` | ✅ |
+| `网关` | ✅ |
+
+### PP04 — ClickHouse 双版本购买路径核验  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `ClickHouse 企业版` | ✅ |
+| `ClickHouse 社区兼容版` | ✅ |
+| `clickhouse_pre_public_cn` | ✅ |
+| `clickhouse_go_public_cn` | ✅ |
+| `无独立规格页` | ✅ |
+| `0.49987` | ✅ |
+
+### PP05 — Lindorm 购买路径 + Serverless 无法新购  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `Lindorm 宽表引擎` | ✅ |
+| `Lindorm 时序引擎` | ✅ |
+| `hitsdb_lindormnextpre_public_cn` | ✅ |
+| `无法新购` | ✅ |
+| `4C16G` | ✅ |
+| `≥ 3 节点` | ✅ |
+
+### PP06 — EMR 家族购买路径核验 + HA Master 3 起步  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `EMR on ECS` | ✅ |
+| `EMR Serverless Spark` | ✅ |
+| `EMR Serverless StarRocks` | ✅ |
+| `Master ≥ 3` | ✅ |
+| `存算一体` | ✅ |
+| `存算分离` | ✅ |
+
+### PP07 — Flink 全托管无作业级 Serverless  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `Flink 全托管` | ✅ |
+| `管控资源固定 2 CU` | ✅ |
+| `作业级 Serverless` | ✅ |
+| `释放整个工作空间` | ✅ |
+| `跨可用区` | ✅ |
+
+### PP08 — DataWorks 资源组购买路径核验  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `DataWorks Serverless 资源组` | ✅ |
+| `最低 2 CU` | ✅ |
+| `包月不能转按量` | ✅ |
+| `独享资源组` | ✅ |
+| `不推荐` | ✅ |
+
+### PP09 — Tair / OSS / PAI / 百炼 购买路径核验  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `kvstore_pretair_public_cn` | ✅ |
+| `Tair Serverless` | ✅ |
+| `learn_EasDedicatedPrepay_public_cn` | ✅ |
+| `PAI-DSW` | ✅ |
+| `百炼 Token Plan` | ✅ |
+| `存储包` | ✅ |
+
+### PP10 — 采购路径核验清单结构完整性（红色预警清单 + 匿名核验边界）  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `红色预警` | ✅ |
+| `采购走不通` | ✅ |
+| `已下线` | ✅ |
+| `无法新购` | ✅ |
+| `不支持转包月` | ✅ |
+| `匿名核验的边界` | ✅ |
+| `登录复验` | ✅ |
+| `C11 版本可售性时效` | ✅ |
+| `C12 Serverless 语义粒度` | ✅ |
+
+### RG01 — 百炼知识库（RAG）规格计费与权限红线  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `0.03 元/知识库·小时` | ✅ |
+| `0.2 元/RCU·小时` | ✅ |
+| `720 小时` | ✅ |
+| `初步召回的总切片数` | ✅ |
+| `SearchFilters` | ✅ |
+| `不能当安全边界` | ✅ |
+| `2027-01-16` | ✅ |
+| `qwen3-rerank` | ✅ |
+
+### RG02 — 向量检索 / RAG 检索引擎 12 条产品线选型  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `DashVector` | ✅ |
+| `Milvus 版` | ✅ |
+| `OpenSearch 向量检索版` | ✅ |
+| `pgvector` | ✅ |
+| `OpenStore` | ✅ |
+| `FalconSeek` | ✅ |
+| `HGraph` | ✅ |
+| `DiskANN` | ✅ |
+| `2000 维` | ✅ |
+
+### RG03 — 私有化部署路线（PAI-EAS 独享 GPU / ACS / 一体机）  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `learn_EasDedicatedPrepay_public_cn` | ✅ |
+| `GU30` | ✅ |
+| `GU120` | ✅ |
+| `3,661` | ✅ |
+| `SDWebUI` | ✅ |
+| `GPU 切分` | ✅ |
+| `gn8v` | ✅ |
+| `AI Stack` | ✅ |
+
+### RG04 — S10 企业内部知识库（员工侧 RAG）场景方案  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
 | `S10` | ✅ |
+| `员工侧 RAG` | ✅ |
+| `BFF` | ✅ |
+| `Recall@5` | ✅ |
+| `合理拒答率` | ✅ |
+| `渗透率` | ✅ |
+| `section_path` | ✅ |
+| `RRF` | ✅ |
+| `Auto-Merge` | ✅ |
+| `长上下文不能替代 RAG` | ✅ |
+
+### RG05 — 核验项 C13/C14 与文档解析计费口径  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `C13 Serverless 最低门槛费` | ✅ |
+| `C14 计费口径的计量基数` | ✅ |
+| `docmind_general_dp_cn` | ✅ |
+| `EnhancementMode=VLM` | ✅ |
+| `0.02 元/页` | ✅ |
+| `0.04 元/页` | ✅ |
+
+### OL01 — 六引擎 OLAP 场景选型（ADB/Hologres/Doris/SelectDB/StarRocks/ClickHouse）  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `ClickBench` | ✅ |
+| `单表大宽表` | ✅ |
+| `复杂多表 JOIN` | ✅ |
+| `高并发主键点查` | ✅ |
+| `存算分离` | ✅ |
+| `HSAP` | ✅ |
+| `羲和` | ✅ |
+| `玄武` | ✅ |
+| `SelectDB Cloud 原生内核` | ✅ |
+
+### OL02 — OLAP 选型关键版本门槛与厂商 benchmark 存疑清单  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `25.3` | ✅ |
+| `43.0s` | ✅ |
+| `存疑清单` | ✅ |
+| `TPC-DS 对决` | ✅ |
+| `版本门槛` | ✅ |
+
+### OL03 — 阿里云上开源 OLAP 售卖映射与内部实战口径  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `EMR Serverless StarRocks` | ✅ |
+| `唯一封装 SelectDB Cloud 原生内核` | ✅ |
+| `迁移工具成熟度` | ✅ |
+| `一票否决项` | ✅ |
+| `StarRocks＞Doris` | ✅ |
+
+### NET01 — 出云流量费计费模型：带宽 vs 流量双模式 + CDT 统一出账  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `出云流量` | ✅ |
+| `按固定带宽计费` | ✅ |
+| `按使用流量计费` | ✅ |
+| `共享流量包` | ✅ |
+| `220GB` | ✅ |
+| `0.80 元/GB` | ✅ |
+| `入方向流量不计费` | ✅ |
+
+### NET02 — 出云流量避坑：BGP 精品无免费额度与买带宽仍收流量费排查  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `BGP（多线）_精品` | ✅ |
+| `无免费额度` | ✅ |
+| `不走 CDT` | ✅ |
+| `CDT 控制台` | ✅ |
+| `316GB` | ✅ |
+
+### AC01 — AgentCore 产品归属与术语（三个平级产品 / AgentTeams 一名两指 / 本地纳管 Agent）  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `智能体构建和治理平台 AgentCore` | ✅ |
+| `3052261` | ✅ |
+| `3034770` | ✅ |
+| `3049178` | ✅ |
+| `三个平级独立产品` | ✅ |
+| `多智能体治理与协作平台 AgentTeams` | ✅ |
+| `智能体 AgentRun` | ✅ |
+| `已迁移至 AgentCore` | ✅ |
+| `协作客户端 (WEB)` | ✅ |
+| `协作客户端(API)` | ✅ |
+| `定时任务在协作客户端（AgentTeams）中创建和管理` | ✅ |
+| `本地纳管 Agent` | ✅ |
+| `guidelines-for-the-use-of-local-nanoagent` | ✅ |
+| ``nanoagent` 在正文命中 0 次` | ✅ |
+
+### AC02 — AgentCore 五个计费项单价（算力/网关/存储 CU + 协作管控面门槛费 + CDT 出账）  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `CNY 0.0000694/CU` | ✅ |
+| `CNY 0.0000015/CU` | ✅ |
+| `CNY 0.00025/CU` | ✅ |
+| `3 元/小时起 = 2160 元/月固定项` | ✅ |
+| `协作专享管控面 **3 元/小时 = 2160 元/月**（按 720h）` | ✅ |
+| `0.8 元/GB` | ✅ |
+| `云数据传输CDT` | ✅ |
+| `由 CDT 统一计费和出账` | ✅ |
+
+### AC03 — CU 换算公式与「换算示例 ≠ 规格菜单」红线  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `3600 CU` | ✅ |
+| `0.5 CU/(GB·秒)` | ✅ |
+| `7200 CU` | ✅ |
+| `3600 × 0.0000694 = **CNY 0.2498**` | ✅ |
+| `7200 × 0.0000694 = **CNY 0.4997**` | ✅ |
+| `换算示例，不是可选规格档位` | ✅ |
+| `选择所需 CPU 和内存` | ✅ |
+
+### AC04 — 地域价表只有内地一行同价 + 新加坡 ap-southeast-1 无单价禁外推  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `中国内地 4 地域单价完全一致` | ✅ |
+| `地域价表只有「北京、杭州、上海、深圳」**一行且四地完全同价**` | ✅ |
+| `ap-southeast-1` | ✅ |
+| `Regions in the Chinese mainland` | ✅ |
+| `无任何单价（RULINGS B4 硬缺口）` | ✅ |
+| `对客严禁用中国内地单价外推新加坡` | ✅ |
+| `新加坡单价**官方未公开**，需走商务/工单确认后再报` | ✅ |
+
+### AC05 — 三项依赖产品（CMS/PrivateLink/SchedulerX3）→ AgentCore 账单 ≠ 全成本  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `CMS（云监控）` | ✅ |
+| `用于写入 Tracing 数据` | ✅ |
+| `PrivateLink（私网连接）` | ✅ |
+| `SchedulerX3` | ✅ |
+| `跳转售卖页购买` | ✅ |
+| `这 0.8 元/GB 不出现在 AgentCore 账单里` | ✅ |
+| `客户按 AgentCore 账单核成本会漏项` | ✅ |
+
+### AC06 — 报价三硬缺口（新加坡单价 / 数据处理量单价 / 算力 CU 规格档位）  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `报价三硬缺口` | ✅ |
+| `新加坡单价 / 数据处理量单价 / 算力 CU 可选规格档位` | ✅ |
+| `数据处理量` | ✅ |
+| `请求体和响应体的数据量按**『数据处理量』单独计费**` | ✅ |
+| `无单价、无计量单位（RULINGS B6 = 硬缺口）` | ✅ |
+| `算力 CU 的可选规格档位 = **硬缺口**` | ✅ |
+
+### AC07 — 协作管控面限免活动窗口与边界（强时效，2026-10-18 后必须复核）  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `2026-09-18 00:00:00 ~ 2026-10-18 23:59:59（北京时间，GMT+8）` | ✅ |
+| `本节 2026-10-18 后必须复核` | ✅ |
+| `距活动结束 27 天` | ✅ |
+| `活动结束后计费策略另行通知` | ✅ |
+| `原价 3 元/小时` | ✅ |
+| `限免不包括：Agent运行时的算力、存储和网关请求等其它费用` | ✅ |
+| `限免期间协作管控面**金额为 0 元**` | ✅ |
+| `账单出现 0 元行**不是漏计**` | ✅ |
+
+### AC08 — 限免期实例连续 30 天无操作即停用回收且不可逆  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `连续 30 天无操作` | ✅ |
+| `限免期间创建的` | ✅ |
+| `停用并自动回收资源` | ✅ |
+| `不能。停用为不可逆操作` | ✅ |
+| `在 30 天内使用一次协作功能即可重置计时` | ✅ |
+| `Agent 与资产配置均保留，仅协作功能不可用` | ✅ |
+
+### AC09 — SLA 可用率 99.9%（非 99.95/99.99）+ 两条必说限定词  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `Agent 运行时服务可用性不低于 99.9%` | ✅ |
+| `99.9% 不随实例规格 / 地域 / 付费方式分档` | ✅ |
+| `全文 `99.95` 命中 **0** 次` | ✅ |
+| `仅针对 AgentCore 平台自身的 Agent 运行时服务` | ✅ |
+| `除非另有约定` | ✅ |
+| `本协议不适用于` | ✅ |
+| `本地云版本` | ✅ |
+
+### AC10 — SLA 赔偿三档 15%/30%/100% + Workspace 服务单元 + 出账金额基数 + 2 个月时限 + 例外第 (7) 条  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `≥ 99.0% 且 < 99.9%` | ✅ |
+| `≥ 95.0% 且 < 99.0%` | ✅ |
+| `不超过该服务单元当月月度服务费用的 100%` | ✅ |
+| `不同服务单元分别计算、可叠加` | ✅ |
+| `不可提现、转让或折现` | ✅ |
+| `按出账金额计，不含以代金券、优惠券及赠送额度抵扣的部分` | ✅ |
+| `未达标月份结束后 **2 个月**内` | ✅ |
+| `逾期后果：**不受理**` | ✅ |
+| `第 (7) 条对客必须主动讲` | ✅ |
+| `实例启停、文件删除等不可逆操作` | ✅ |
+| `经客户授权的` | ✅ |
+| `在客户授权范围内` | ✅ |
+| `一律不赔` | ✅ |
+
+### AC11 — 账号集成 30 用户硬上限 / 无微信账号集成 / 无 LDAP-SCIM 目录同步  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `最多支持 30 个用户，超出后账号集成将失败` | ✅ |
+| `30 用户硬上限` | ✅ |
+| `钉钉、微信、飞书` | ✅ |
+| `微信只有消息通道、无账号集成` | ✅ |
+| `无任何微信账号集成页` | ✅ |
+| `无 LDAP/SCIM` | ✅ |
+| `仅支持通过本地账号方式进行认证` | ✅ |
+| `企业目录同步需另配 IDaaS` | ✅ |
+
+### AC12 — slug 陷阱：configure-dingtalk-account-integration 正文其实是飞书  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `configure-dingtalk-account-integration` | ✅ |
+| `agentcore-configure-dingtalk-account-integration` | ✅ |
+| `这一页是飞书集成，不是钉钉` | ✅ |
+| `配置飞书账号集成` | ✅ |
+| `AgentCore 支持企业成员使用飞书扫码登录` | ✅ |
+| `标题对、slug 错` | ✅ |
+
+### AC13 — AgentCore 六条数值型配额（SubAgent/记忆空间/MCP 描述/纳管并发/VPC 交换机）  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `最多可配置20个SubAgent` | ✅ |
+| `1~64 字符` | ✅ |
+| `最多 1024 个字符` | ✅ |
+| `不超过 1000 个字符` | ✅ |
+| `默认并发数为 2，支持设置为 1～8` | ✅ |
+| `--max-concurrent-tasks` | ✅ |
+| `需选择至少 2 个交换机，并确保覆盖至少 2 个不同可用区` | ✅ |
+
+### AC14 — SLR 权限面排障：RAM 搜 Magic / magic.aliyuncs.com / hiclaw-* / 158 条 Action  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `在搜索框中输入 **`Magic`** 并搜索` | ✅ |
+| `magic.aliyuncs.com` | ✅ |
+| `acs:oss:*:*:hiclaw-*` | ✅ |
+| `AliyunServiceRoleForAgentCore` | ✅ |
+| `AliyunServiceRoleForMagic` | ✅ |
+| `SLR 策略 Action 前缀构成（158 条）` | ✅ |
+| ``schedulerx` 命中 0 条` | ✅ |
+| `mse.console.aliyun.com/#/magic-console/` | ✅ |
+
+### AC15 — 未商用能力清单 + AgentCore 不是公测产品（严禁据 AgentTeams 公测免费外推）  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `快速创建**：表单式低代码创建，即将上线` | ✅ |
+| `虚拟 MCP` | ✅ |
+| `注册 Agent（待上线）` | ✅ |
+| `高代码 Agent（待上线）` | ✅ |
+| `本页不是「公测产品页」` | ✅ |
+| `13 页「公测」命中 **0**` | ✅ |
+| `AgentCore 已商用计费、无准入白名单` | ✅ |
+| `自称「公测阶段、产品本身免费」的是 **AgentTeams**` | ✅ |
+
+### AC16 — AgentTeams 迁移：不自动 / 交互式 6 步 / 5 类不迁 / 术语映射仅 1 条有证据 / 四项缺口  [PASS]
+
+| 关键词 | 命中 |
+| --- | --- |
+| `不自动迁移` | ✅ |
+| `交互式 6 步` | ✅ |
+| `不在本次迁移范围内（5 类，逐字照抄）` | ✅ |
+| `仅 1 条有页面证据（Skill ↔ Skill）` | ✅ |
+| `其余 **18 条均为「页面未说明」**` | ✅ |
+| `不得把 Worker↔Agent 等术语映射当官方等价关系` | ✅ |
+| `Worker → Agent` | ✅ |
+| `迁移生效时间/是否强制/有无截止时间/AgentTeams 控制台是否还能进` | ✅ |
+| `官方未公布截止时间` | ✅ |
+| `严禁把文件名当迁移生效日期` | ✅ |
+| `agentteams-to-agentcore-migration-tool-20260831.zip` | ✅ |
+| `新的 Endpoint` | ✅ |
+| `不得据 AgentTeams「当前处于公测阶段，产品本身免费」推断 AgentCore 免费` | ✅ |
+| `严禁外推到 AgentCore` | ✅ |
 
 ## 文件覆盖
 
 | 文件 | 字符数 |
 | --- | --- |
-| `knowledge/aliyun-products.md` | 70,385 |
-| `knowledge/cloud-solutions.md` | 47,004 |
-| `knowledge/industry-landscape.md` | 14,480 |
-| `knowledge/ai-trends.md` | 25,039 |
+| `knowledge/aliyun-products.md` | 132,746 |
+| `knowledge/aliyun-agentcore.md` | 122,486 |
+| `knowledge/cloud-solutions.md` | 48,685 |
+| `knowledge/industry-landscape.md` | 16,141 |
+| `knowledge/ai-trends.md` | 21,795 |
 | `knowledge/competitor-cloud.md` | 18,893 |
-| `knowledge/company-profiles.md` | 9,920 |
-| `references/architecture-templates.md` | 9,724 |
+| `knowledge/company-profiles.md` | 11,617 |
+| `knowledge/olap-engine-selection.md` | 4,539 |
+| `references/architecture-templates.md` | 11,228 |
 | `references/migration-methodology.md` | 8,897 |
 | `references/bigdata-migration.md` | 17,483 |
 | `references/well-architected.md` | 3,597 |
 | `references/caf-landing-zone.md` | 4,646 |
 | `references/cloud-product-mapping.md` | 3,098 |
 | `references/customer-playbook.md` | 1,931 |
-
-## 负控实验（Negative Control，2026-09-21）
-
-> 全绿/满分是失效信号。本节证明「新增用例在本次改动之前会 FAIL」。
-> **方法**：未改动工作树——用只读方式取两套改动前语料到 /tmp 临时目录：
-> ① `cp` 快照本次编辑前的工作树 13 个语料文件 → `/tmp/kb-baseline-20260921/`（含 2026-08-08 未提交改动，即编辑前的真实状态）；
-> ② 只读 git 命令 `git show HEAD:neil-aliyun-sa/<file>`（HEAD=3723a5a）→ `/tmp/kb-head-20260921/`。
-> 匹配逻辑与 run-regression.py 完全一致：同 files 清单（13 文件拼接 blob）、大小写不敏感子串、阈值 0.85。脚本：`/tmp/negctl-20260921.py`。
-
-### 结果矩阵（改动前）
-
-| 用例 | 基线1：编辑前工作树快照 | 基线2：git HEAD(3723a5a) | 改动后（本报告正文） |
-| --- | --- | --- | --- |
-| GW01（ext-auth/service_name/FQDN） | **0/8 = 0% → FAIL** | **0/8 = 0% → FAIL** | 8/8 = 100% PASS |
-| GW02（三种形态谱系/EOL） | **0/6 = 0% → FAIL** | **0/6 = 0% → FAIL** | 6/6 = 100% PASS |
-| GW03（Serverless 插件硬限制） | **0/6 = 0% → FAIL** | **0/6 = 0% → FAIL** | 6/6 = 100% PASS |
-| GW04（A路 vs B路/超时陷阱） | **0/9 = 0% → FAIL** | **0/9 = 0% → FAIL** | 9/9 = 100% PASS |
-| T10 完整 9 词（v1.3 扩词后） | 6/9 = 67% → **FAIL**（仅 v1.3 新增 4 词单算 = 1/4 = 25%） | 6/9 = 67% → **FAIL** | 9/9 = 100% PASS |
-
-### 旧版本命中数 = 0 的关键词清单（两套基线一致，共 30 个）
-
-- **GW01（8 个全 0）**：`ext-auth`、`service_name`、`FQDN`、`my-svc.dns`、`svc.cluster.local`、`forward_auth`、`path_prefix`、`外部认证`
-- **GW02（6 个全 0）**：`云原生 API 网关`、`AI 网关`、`原 API 网关`、`2026-08-23`、`2027-09-21`、`全面下线`
-- **GW03（6 个全 0）**：`Serverless版不支持`、`专享实例`、`插件市场`、`路由级`、`域名级`、`插件规则`
-- **GW04（9 个全 0）**：`全局认证鉴权`、`自建的鉴权服务`、`鉴权API`、`x-mse-external-authz-check-result`、`endpoint_mode`、`failure_mode_allow`、`status_on_error`、`宽松模式`、`S10`
-- **T10 v1.3 新增词（3 个 0 命中）**：`云原生API网关`（无空格写法）、`AI 网关`、`原 API 网关`；第 4 个新增词 `三种形态` 在旧库已有 3 处命中（Tair/ACK 卡），故 T10 旧版为 6/9=67% 而非 0%，仍 < 0.85 FAIL——证明 T10 原 5 词确系假绿，扩词后才有判别力。
-
-### 结论
-
-4 个新用例（GW01-GW04，29 个关键词）在两套改动前基线上**全部 0 命中、全部 FAIL**；扩词后的 T10 在改动前也 FAIL（67%）。改动后 30/30 全 PASS 由本次写入的知识真实驱动，非假绿。
-
----
-
-# 收口补充回归（2026-09-21 第二轮：MCP 维度 + 火山对标）
-
-> **测试器**：scripts/run-regression.py（逻辑未改动）
-> **用例库**：tests/regression-cases.yaml (**v1.4**，新增 GW05/GW06；GW01-GW04/T10 等既有用例未改动)
-> **覆盖文件**：13 个 markdown（与首轮相同清单）
-> **PASS 阈值**：命中率 ≥ 85%
-> ⚠️ 本节为**追加**，首轮结果与负控节原样保留在上方。
-
-## 总览
-
-- **整体命中率**：100.0%
-- **PASS 数**：32/32
-- **FAIL 数**：0/32
-- 既有用例（T01-GW04 共 30 个）全部保持 PASS（无回归）；新增 2 用例：
-
-| ID | 模式 | 场景 | 命中 / 总数 | 命中率 | 状态 |
-| --- | --- | --- | --- | --- | --- |
-| GW05 | C | MCP 鉴权：tools/list 能否鉴权 / 传输层鉴权 / 消费者认证 / HTTP转MCP / forward_auth | 9/9 | 100% | ✅ PASS |
-| GW06 | E | 火山引擎 API 网关外部认证对标（Envoy 内核 / 仅实例级 / 同私有网络 / 精确匹配 / GET或POST / 邀测） | 6/6 | 100% | ✅ PASS |
-
-## 新增用例命中明细
-
-### GW05 [PASS]
-
-| 关键词 | 命中 |
-| --- | --- |
-| `tools/list` | ✅ |
-| `initialize` | ✅ |
-| `Streamable HTTP` | ✅ |
-| `单一 MCP endpoint` | ✅ |
-| `消费者认证` | ✅ |
-| `HTTP转MCP` | ✅ |
-| `forward_auth` | ✅ |
-| `X-Forwarded-Uri` | ✅ |
-| `传输层鉴权` | ✅ |
-
-### GW06 [PASS]
-
-| 关键词 | 命中 |
-| --- | --- |
-| `采用 Envoy 内核` | ✅ |
-| `仅支持在实例级别生效` | ✅ |
-| `相同私有网络` | ✅ |
-| `精确匹配` | ✅ |
-| `GET 或 POST` | ✅ |
-| `邀测` | ✅ |
-
-## 负控实验（Negative Control，收口补充轮）
-
-> 全绿是失效信号。本节证明「GW05/GW06 在本轮改动之前会 FAIL」。
-> **方法（未改动工作树）**：
-> ① 基线1 = 本轮**编辑前**工作树 13 个语料文件的 `cp` 快照 → `/tmp/kb-closeout-baseline-20260921/`（即上一轮蒸馏完成后的状态）；
-> ② 基线2 = 只读 git 命令 `git show HEAD:neil-aliyun-sa/<file>`（HEAD=3723a5a，含上两轮之前状态）→ `/tmp/kb-head-closeout/`。
-> 匹配逻辑与 run-regression.py 完全一致：同 13 文件拼接 blob、大小写不敏感子串计数、阈值 0.85。
-
-### 每个关键词的旧版命中数（逐词实测）
-
-| 关键词 | 基线1（编辑前工作树） | 基线2（git HEAD 3723a5a） |
-| --- | --- | --- |
-| GW05 `tools/list` | **0** | **0** |
-| GW05 `initialize` | 3（⚠️ 均为无关英文用法：aliyun-products:153 `Initialize`、ai-trends:401 Agent 初始化语境 ×2，非 MCP 鉴权） | 1（同为 aliyun-products:153 无关用法） |
-| GW05 `Streamable HTTP` | **0** | **0** |
-| GW05 `单一 MCP endpoint` | **0** | **0** |
-| GW05 `消费者认证` | 2（上一轮能力清单/选型场景泛提及，非 MCP 语境） | **0** |
-| GW05 `HTTP转MCP` | **0** | **0** |
-| GW05 `forward_auth` | 18（上一轮 B 路 ext-auth 内容已含） | **0** |
-| GW05 `X-Forwarded-Uri` | 2（上一轮 B 路示例已含） | **0** |
-| GW05 `传输层鉴权` | **0** | **0** |
-| GW06 `采用 Envoy 内核` | **0** | **0** |
-| GW06 `仅支持在实例级别生效` | **0** | **0** |
-| GW06 `相同私有网络` | **0** | **0** |
-| GW06 `精确匹配` | **0** | **0** |
-| GW06 `GET 或 POST` | **0** | **0** |
-| GW06 `邀测` | **0** | **0** |
-
-### 结果矩阵（改动前 → 改动后）
-
-| 用例 | 基线1：编辑前工作树 | 基线2：git HEAD(3723a5a) | 本轮改动后 |
-| --- | --- | --- | --- |
-| GW05（MCP 鉴权 9 词） | **4/9 = 44% → FAIL** | **1/9 = 11% → FAIL** | 9/9 = 100% PASS |
-| GW06（火山对标 6 词） | **0/6 = 0% → FAIL** | **0/6 = 0% → FAIL** | 6/6 = 100% PASS |
-
-### 结论
-
-- GW06 六个关键词在两套基线上**全部 0 命中、全 FAIL**——本轮火山对标知识全部为新增。
-- GW05 在两套基线上均 FAIL（44% / 11% < 85%）。如实说明：`forward_auth`/`X-Forwarded-Uri`/`消费者认证`/`initialize` 4 词在基线1 已有命中，系上一轮 ext-auth B 路与无关英文用法所致（逐词出处见上表）；MCP 语义判别词（`tools/list`、`Streamable HTTP`、`单一 MCP endpoint`、`HTTP转MCP`、`传输层鉴权`）在两套基线全部 0 命中。对基线2（git HEAD）除 1 处无关 `Initialize` 外全部 0 命中。
-- 未删除任何关键词、未降低阈值；改动后 32/32 全 PASS 由本轮写入的 MCP 维度与火山对标知识真实驱动。
+| `references/pricing-verification-checklist.md` | 27,894 |

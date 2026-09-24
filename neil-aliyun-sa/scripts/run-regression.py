@@ -66,15 +66,23 @@ def _mini_yaml(text: str) -> dict:
             val = line.split("-", 1)[1].strip()
             data["files"][cur_list_for[1]].append(val)
         elif cur_section == "cases" and re.match(r"^\s*-\s*id:", line):
-            cur_case = {"keywords": []}
+            cur_case = {"keywords": [], "forbidden": []}
             data["cases"].append(cur_case)
             cur_case["id"] = line.split(":", 1)[1].strip()
             cur_list_for = None
         elif cur_section == "cases" and re.match(r"^\s+keywords:", line):
             cur_list_for = ("case", "keywords")
+        elif cur_section == "cases" and re.match(r"^\s+forbidden:", line):
+            # 🔴 forbidden 不变量（2026-09-21 新增）：命中即 FAIL，与 keyword 命中率无关。
+            # 依据：门禁全绿本身是失效信号，keyword 命中率只能证明「该写的写了」，
+            # 证明不了「不该写的没写」；forbidden 才是否定性不变量。
+            cur_list_for = ("case", "forbidden")
         elif cur_list_for == ("case", "keywords") and re.match(r"^\s+-\s*", line):
             val = line.split("-", 1)[1].strip().strip('"')
             cur_case["keywords"].append(val)
+        elif cur_list_for == ("case", "forbidden") and re.match(r"^\s+-\s*", line):
+            val = line.split("-", 1)[1].strip().strip('"')
+            cur_case.setdefault("forbidden", []).append(val)
         elif cur_section == "cases" and cur_case is not None and re.match(r"^\s+\w+:", line):
             k, v = line.strip().split(":", 1)
             cur_case[k.strip()] = v.strip().strip('"')
@@ -109,6 +117,7 @@ def run(root: Path, threshold: float, out: Path) -> int:
     results = []
     for case in spec["cases"]:
         keywords = case["keywords"]
+        forbidden = case.get("forbidden") or []
         per_kw = []
         hits = 0
         for kw in keywords:
@@ -117,7 +126,13 @@ def run(root: Path, threshold: float, out: Path) -> int:
             if ok:
                 hits += 1
         rate = hits / len(keywords) if keywords else 0
-        status = "PASS" if rate >= threshold else "FAIL"
+        # 🔴 forbidden 不变量：命中任一条即 FAIL，且不受命中率影响（否证优先于印证）
+        fb_details = [(f, hit(blob, f)) for f in forbidden]
+        violated = [f for f, ok in fb_details if ok]
+        if violated:
+            status = "FAIL"
+        else:
+            status = "PASS" if rate >= threshold else "FAIL"
         results.append({
             "id": case["id"],
             "mode": case.get("mode", "?"),
@@ -127,11 +142,16 @@ def run(root: Path, threshold: float, out: Path) -> int:
             "total": len(keywords),
             "status": status,
             "details": per_kw,
+            "forbidden_total": len(forbidden),
+            "forbidden_details": fb_details,
+            "violated": violated,
         })
 
     pass_n = sum(1 for r in results if r["status"] == "PASS")
     total = len(results)
     overall = sum(r["rate"] for r in results) / total if total else 0
+    fb_total = sum(r.get("forbidden_total", 0) for r in results)
+    fb_viol = [(r["id"], v) for r in results for v in r.get("violated", [])]
 
     # 写报告
     now = dt.datetime.now()
@@ -141,22 +161,33 @@ def run(root: Path, threshold: float, out: Path) -> int:
     lines.append(f"> **测试器**：scripts/run-regression.py")
     lines.append(f"> **用例库**：tests/regression-cases.yaml (v{spec.get('version','?')})")
     lines.append(f"> **覆盖文件**：{len(corpus)} 个 markdown / 共 {sum(len(c) for c in corpus.values())} 字符")
-    lines.append(f"> **PASS 阈值**：命中率 ≥ {threshold:.0%}")
+    lines.append(f"> **PASS 阈值**：命中率 ≥ {threshold:.0%}；🔴 **且 `forbidden` 不变量零命中**（命中即 FAIL，与命中率无关）")
     lines.append("")
     lines.append("## 总览")
     lines.append("")
     lines.append(f"- **整体命中率**：{overall:.1%}")
     lines.append(f"- **PASS 数**：{pass_n}/{total}")
     lines.append(f"- **FAIL 数**：{total - pass_n}/{total}")
+    lines.append(f"- **forbidden 不变量**：共 {fb_total} 条，违反 **{len(fb_viol)}** 条")
     lines.append("")
     lines.append("## 用例结果矩阵")
     lines.append("")
-    lines.append("| ID | 模式 | 场景 | 命中 / 总数 | 命中率 | 状态 |")
-    lines.append("| --- | --- | --- | --- | --- | --- |")
+    lines.append("| ID | 模式 | 场景 | 命中 / 总数 | 命中率 | forbidden 违反 | 状态 |")
+    lines.append("| --- | --- | --- | --- | --- | --- | --- |")
     for r in results:
         emoji = "✅" if r["status"] == "PASS" else "❌"
-        lines.append(f"| {r['id']} | {r['mode']} | {r['title']} | {r['hits']}/{r['total']} | {r['rate']:.0%} | {emoji} {r['status']} |")
+        fbc = "—" if not r.get("forbidden_total") else (
+            "0/%d" % r["forbidden_total"] if not r.get("violated")
+            else "🔴 %d/%d" % (len(r["violated"]), r["forbidden_total"]))
+        lines.append(f"| {r['id']} | {r['mode']} | {r['title']} | {r['hits']}/{r['total']} | "
+                     f"{r['rate']:.0%} | {fbc} | {emoji} {r['status']} |")
     lines.append("")
+    if fb_viol:
+        lines.append("## 🔴 forbidden 不变量违反明细（否证优先，必须先修这里）")
+        lines.append("")
+        for cid, v in fb_viol:
+            lines.append(f"- `{cid}` 命中禁写串：`{v}`")
+        lines.append("")
     lines.append("## 详细命中明细")
     lines.append("")
     for r in results:
@@ -166,6 +197,12 @@ def run(root: Path, threshold: float, out: Path) -> int:
         lines.append("| --- | --- |")
         for kw, ok in r["details"]:
             lines.append(f"| `{kw}` | {'✅' if ok else '❌'} |")
+        if r.get("forbidden_total"):
+            lines.append("")
+            lines.append(f"forbidden 不变量（{r['forbidden_total']} 条，命中即 FAIL）：")
+            lines.append("")
+            for kw, ok in r.get("forbidden_details", []):
+                lines.append(f"- {'🔴 违反' if ok else '✅ 未命中'} `{kw}`")
         lines.append("")
     lines.append("## 文件覆盖")
     lines.append("")
@@ -181,10 +218,14 @@ def run(root: Path, threshold: float, out: Path) -> int:
     print(f"\n=== 回归测试完成 ===")
     print(f"整体命中率: {overall:.1%}")
     print(f"PASS: {pass_n}/{total}  FAIL: {total - pass_n}/{total}")
+    print(f"forbidden 不变量: {fb_total} 条，违反 {len(fb_viol)} 条")
     print(f"报告已写入: {out}")
     for r in results:
         emoji = "✅" if r["status"] == "PASS" else "❌"
-        print(f"  {emoji} {r['id']} [{r['mode']}] {r['title']} — {r['hits']}/{r['total']} ({r['rate']:.0%})")
+        fb = ""
+        if r.get("violated"):
+            fb = "  🔴 违反禁写串: %s" % ", ".join(r["violated"])
+        print(f"  {emoji} {r['id']} [{r['mode']}] {r['title']} — {r['hits']}/{r['total']} ({r['rate']:.0%}){fb}")
 
     return 0 if pass_n == total else 1
 
