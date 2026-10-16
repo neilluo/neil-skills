@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "timezone": "+08:00",
+  "doc_workspace": "nb9XJrQQ3D0RPXyA",
+  "doc_title_pattern": "{yyyymmdd}工单",
+  "customers": [
+    {
+      "key": "haidilao",
+      "name": "海底捞",
+      "service_group_name": "海底捞企业支持顶级服务",
+      "service_group_cid": "cidgMyijbO61zaPBGdPuoFCMQ==",
+      "daily_doc_parent_node": "ZgpG2NdyVXRmQ0jgC5NNkdXL8MwvDqPk",
+      "customer_folder_node": "o14dA3GK8gQlkoYwckgyZ0RPV9ekBD76",
+      "subgroup_policy": "probe_then_fallback",
+      "auto_join_expected": true,
+      "notes": "子群自动入群已生效（2026-10-14 实测子群可读）"
+    },
+    {
+      "key": "hesi",
+      "name": "合思",
+      "service_group_name": "北京合思企业级服务",
+      "service_group_cid": "cidV79T8cqbWyqrn02uYJknXw==",
+      "daily_doc_parent_node": "a9E05BDRVQRkezKGCZXXg4jzJ63zgkYA",
+      "customer_folder_node": "YQBnd5ExVEjea40qC6vyxOY1JyeZqMmz",
+      "subgroup_policy": "probe_then_fallback",
+      "auto_join_expected": true,
+      "notes": "自动入群已于 2026-10-15 由用户确认配置完成；probe 成功即自动全量读子群。注意：入群配置可能不追溯历史子群，补跑老日期仍可能降级"
+    },
+    {
+      "key": "qianlima",
+      "name": "千里马",
+      "service_group_name": "北京千里马网信科技有限公司企业标准服务",
+      "service_group_cid": "cidOZrbnka30PZ0re4hShD2Jw==",
+      "daily_doc_parent_node": "Y1OQX0akWmzdBowLFNwwz7q2VGlDd3mE",
+      "customer_folder_node": "gvNG4YZ7Jnxop15OCAE1nDxNW2LD0oRE",
+      "subgroup_policy": "probe_then_fallback",
+      "auto_join_expected": true,
+      "notes": "自动入群已于 2026-10-15 由用户确认配置完成（2026-10-14 实测尚为 130003）；probe 成功即自动全量读子群。注意：入群配置可能不追溯历史子群，补跑老日期仍可能降级"
+    }
+  ]
+}

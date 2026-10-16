@@ -1,0 +1,2 @@
+MCP issues detected. Run /mcp list for status.
+

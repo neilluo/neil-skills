@@ -1,0 +1,31 @@
+{
+  "main_cid": "cidgMyijbO61zaPBGdPuoFCMQ==",
+  "expected": {
+    "tid": "E2610138P570LF",
+    "title": "请帮忙改一下 我们ACK 集群 中...",
+    "creator": "聂伟",
+    "xiaoer": "邱成相",
+    "status": "已完结",
+    "subgroup_cid": "cidKOwD3PfpuvdJTw4IuWOJcw==",
+    "desc_prefix": "客户希望将ACK集群中loongcollector组件默认创建的Project名称",
+    "sol_prefix": "1、通过ACK控制台"
+  },
+  "messages": [
+    {
+      "conversationId": "cidgMyijbO61zaPBGdPuoFCMQ==",
+      "createTime": "2026-10-13 16:11:40",
+      "messageId": "msg/3vRFCnAV5rVQ0AyYeBHhw==",
+      "sender": "阿里云服务台",
+      "senderId": "Diivc8bb8kgXwKwThE4FF6WkEbMk4CXZqP",
+      "text": "@聂伟  已为您创建新企业工单 \n\n 企业工单标题：<font color=#096DD9>请帮忙改一下 我们ACK 集群 中...</font> \n\n 企业工单ID：E2610138P570LF \n\n 企业工单状态：处理中  \n\n 当前小二：邱成相 \n\n 请[点击此处](dingtalk://dingtalkclient/page/link?pc_slide=true&amp;url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Fgroup%2FjoinSubgroup%3FtaskId%3D4844999%26departmentId%3D139087160%26language%3D%26openconversitionid%3DcidgMyijbO61zaPBGdPuoFCMQ%253D%253D) 进入企业工单专项群。\n\n Tips：如您在企业工单处理过程中遇到任何问题，可以点击[催单](dingtalk://dingtalkclient/page/link?pc_slide=true&amp;url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Ftask%2Furge%3Ftid%3D4844999%26departmentId%3D139087160%26snapshot%3D%26language%3D%26openconversitionid%3DcidKOwD3PfpuvdJTw4IuWOJcw%253D%253D)为您加急处理。"
+    },
+    {
+      "conversationId": "cidgMyijbO61zaPBGdPuoFCMQ==",
+      "createTime": "2026-10-14 10:09:09",
+      "messageId": "msgfYO0244YjcB6OIGt6oTbqA==",
+      "sender": "阿里云服务台",
+      "senderId": "Diivc8bb8kgXwKwThE4FF6WkEbMk4CXZqP",
+      "text": "@聂伟   企业工单已完结 \n\n 企业工单标题：请帮忙改一下 我们ACK 集群 中... \n\n 企业工单ID：E2610138P570LF \n\n 企业工单总结：【问题描述】客户希望将ACK集群中loongcollector组件默认创建的Project名称从k8s-log-cf3acbccd689a42388ca83c2b0a44953b修改为aiot-ack-test-log。 【解决方案】1、通过ACK控制台“应用--Helm”菜单找到loongcollector发布包，点击更新操作。 2、在配置文件中将projectName字段调整为自定义的SLS Project名称（如aiot-ack-test-log），若涉及区域调整可同步修改region值，修改后保存即可。 3、若遇到只读编辑器无法编辑的情况，建议创建应用时直接指定Project参数进行配置。 \n\n 聊天记录：[查看](dingtalk://dingtalkclient/page/link?url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Fgroup%2FchatRecord%3FtaskId%3D4844999%26messageId%3Dnull%26openconversitionid%3DcidKOwD3PfpuvdJTw4IuWOJcw%253D%253D&amp;popup_wnd=true&amp;height=800&amp;width=600&amp;title=%e8%81%8a%e5%a4%a9%e8%ae%b0%e5%bd%95)"
+    }
+  ]
+}
