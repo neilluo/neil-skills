@@ -69,7 +69,10 @@
 
 ## N. 总结子代理契约
 - 每客户一个总结 subagent 并发执行：只允许整理卡片/子群原文，禁止补充事实；effective_evidence 必须引真实 messageId + 原文子串 quote；publish 由 sanitize_summary 脚本门禁兜底（规则 E）。契约全文与 few-shot 样例以 reference.md 为唯一出处。
-- 来源：SKILL.md 跑批流程第 2 步；第一轮 GLM-5.3（子代理编造事实风险）；第二轮 Ultimate-b（few-shot 曾缺 effective_status/effective_evidence 字段，已补）。
+- **process_bullets 必须精简合成、禁止逐条摘录群聊原文**（用户 2026-10-16 指令「几乎没有总结、原封不动把群里的聊天内容直接摘录下来这种是不对的」）：每单目标 3–6 条主线要点（客户核心诉求 → 工程师关键判断/方案 → 最终结果），合并同话题往返追问，去掉逐条时间戳流水账，不透服务人员与客户人名（用「客户」「工程师」「值班小二」等角色词——人名已在概览表的建单人/当前小二列呈现）。合成＝压缩与归类，不是编造：「只整理原文、不补充事实」同样约束 bullets。
+- **机械观察哨（只报不改，对齐规则 E「LLM 提议、脚本门禁」与用户「长度约束只报观察、拒截断式 normalize」）**：gate.py `lint_process_bullets` 识别「疑似流水账」签名——bullet 数 > `MAX_BULLETS`(8)，或以时间戳（`HH:MM` / `YYYY-MM-DD HH:MM`）开头的 bullet 占比 ≥50%（≥3 条时）；publish._bullets_note 逐工单跑 lint，命中则在发布行追加「总结疑似流水账[tid:签名]」，随 run-<date>.json results 投递到「问问」供人工/巡检复核。**只报不改**：绝不截断/重写 bullets（截断会伤事实、重写需 LLM），质量好坏由总结 subagent 依本契约负责，lint 仅暴露违规信号。合成质量本身无机械判据（无法用正则区分「好总结」与「坏总结」），故 lint 只抓最强的流水账签名，其余靠契约 + few-shot + 发布行人工复核兜底。
+- 人名脱敏为何停在契约层不做机械：`lint_process_bullets` 无法可靠机器识别所有客户/工程师人名（如某工单 creator 为空、人名散落在长句中），机械脱敏会漏判或误伤正文，故只写进契约由 subagent 遵守，不谎称有机械保证（对齐用户「契约未落地不得写入宣称」）。
+- 来源：SKILL.md 跑批流程第 2 步；第一轮 GLM-5.3（子代理编造事实风险）；第二轮 Ultimate-b（few-shot 曾缺 effective_status/effective_evidence 字段，已补）；用户 2026-10-16（process_bullets 逐条摘录群聊、透人名）。
 
 ## O. 评审工具链坑
 - 用 qodercli 跑评审子代理（如 Ultimate）：评审材料必须用 `--attachment` 注入，并在提示词中禁止工具调用——`-p` 模式不执行工具调用，让模型「自己读文件」会静默早退，产出空报告。

@@ -110,6 +110,41 @@ def main():
     sig_c = T.compute_signals(t2, [{"messageId": "m2", "sender": "聂伟", "text": "没问题，谢谢！"}])
     assert len(sig_c["customer_confirm_msgs"]) == 1
 
+    # process_bullets 精简合成观察哨 lint_process_bullets（AGENTS.md 规则 N，只报不改）
+    assert T.MAX_BULLETS == 8, T.MAX_BULLETS
+    # 正控：精简主线（4 条、无时间戳）→ 无告警
+    good_b = ["建单与首响：客户报数据源连通失败", "定位白名单争议：工程师澄清 192 网段",
+              "找到真因：数据库名称填错", "解决与关单：修正后连通成功并结单"]
+    assert T.lint_process_bullets(good_b) == [], T.lint_process_bullets(good_b)
+    # 正控：>MAX_BULLETS 条 → 命中条数超限签名
+    many = [f"要点{i}" for i in range(9)]
+    w_many = T.lint_process_bullets(many)
+    assert any("超上限" in w for w in w_many), w_many
+    # 正控：过半 bullet 以时间戳开头 → 命中逐条摘录签名（不足 3 条不触发占比判定）
+    ts_b = ["16:28 播报建单", "16:29 客户首述", "16:30 工程师响应", "结论"]
+    w_ts = T.lint_process_bullets(ts_b)
+    assert any("时间戳开头" in w for w in w_ts), w_ts
+    # 日期+时间前缀同样识别
+    assert T.lint_process_bullets(["2026-10-15 09:22 推送", "09:52 完结", "其他"])
+    # 负控：2 条时间戳开头（<3）不触发占比签名，避免小样本误报
+    assert "时间戳开头" not in "".join(T.lint_process_bullets(["16:28 建单", "16:30 响应"]))
+    # 负控：空/非列表安全返回空
+    assert T.lint_process_bullets([]) == []
+    assert T.lint_process_bullets(None) == []
+    assert T.lint_process_bullets("不是列表") == []
+    # 只报不改：lint 不得修改入参
+    probe = list(ts_b)
+    T.lint_process_bullets(probe)
+    assert probe == ts_b, "lint 疑似改动了入参（违反只报不改）"
+    # publish._bullets_note 逐工单聚合签名（命中→非空含 tid；无命中→空串）
+    slice_bul = {"ticket_order": ["TA", "TB"],
+                 "tickets": {"TA": {}, "TB": {}}, "subgroup_readable": {}}
+    sum_bul = {"TA": {"process_bullets": many}, "TB": {"process_bullets": good_b}}
+    note = T._bullets_note(sum_bul, slice_bul)
+    assert "TA" in note and "疑似流水账" in note and "TB" not in note, note
+    assert T._bullets_note({"TA": {"process_bullets": good_b}},
+                           {"ticket_order": ["TA"]}) == ""
+
     # 机器人重发建单卡：created_at 不被后到的重发卡覆盖（生产消息升序入 parse）
     dup = list(fix["messages"])
     later = dict(dup[0], createTime="2026-10-13 17:00:00", messageId="msgDUP==")

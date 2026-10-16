@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 from .config import OUT_DIR, cfg_tz, doc_title, load_config, select_customers
-from .gate import sanitize_summary
+from .gate import lint_process_bullets, sanitize_summary
 from .render import carryover_section, esc_cell, render, verification_markers
 from .transport import RETRY_CREATE, RETRY_TRANSPORT, run_dws
 
@@ -206,6 +206,17 @@ def _verify_written(node_id, customer, slice_):
     return "校验通过" if not missing else f"校验缺失 {missing}（node={node_id} 供人工核）"
 
 
+def _bullets_note(summary, slice_):
+    """process_bullets 精简合成观察哨（AGENTS.md 规则 N）：逐工单跑 lint_process_bullets，
+    命中则拼入发布行提示「疑似流水账」，供人工/巡检复核总结质量。只报不改。"""
+    hits = []
+    for tid in slice_["ticket_order"]:
+        warns = lint_process_bullets((summary or {}).get(tid, {}).get("process_bullets"))
+        if warns:
+            hits.append(f"{tid}:{'/'.join(warns)}")
+    return f"；总结疑似流水账[{'; '.join(hits)}]" if hits else ""
+
+
 def publish_one(customer, date_str, collect, force, cfg, prev_collects):
     slice_ = collect["customers"].get(customer["key"])
     if slice_ is None:
@@ -231,6 +242,7 @@ def publish_one(customer, date_str, collect, force, cfg, prev_collects):
         tmp = fh.name
     note = "；总结缺失(回退渲染)" if summary_missing else ""
     note += _folder_warning(customer)
+    note += _bullets_note(summary, slice_)
     try:
         if target is None:
             node_id, action = create_doc_idempotent(title, folder, tmp)

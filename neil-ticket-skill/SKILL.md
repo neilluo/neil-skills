@@ -33,7 +33,7 @@ D 日跑批记 **D-1（工单日）** 的工单，文档名 = 工单日（`YYYYM
 1. 采集（脚本，客户间并发，单客户失败隔离进 collect["errors"]）：
    `python3 scripts/ticket.py collect --date <工单日>`
    自动续期跨组织读授权（24h TTL）→ 每客户 desc/older 单页窗口拉主群消息（空页重试、翻页漏读告警）→ 正则抽卡片事件与子群 cid → 探读子群 → 产出 `outputs/collect-<date>.json` 与每客户 `outputs/transcripts-<date>-<key>.json`。
-2. 总结（每客户一个 subagent，并发）：读自己的 transcripts 文件与 collect 切片，按工单写 `outputs/summary-<date>-<key>.json`，字段 `{ "<工单ID>": {"problem": str, "process_bullets": [str], "solution": str, "effective_status": str, "effective_evidence": {"message_id": str, "quote": str}} }`。契约：只允许整理原文，不允许补充事实；problem 取材＝完结卡【问题描述】逐字 > 建单卡标题+客户首条原话；solution 取材＝完结卡【解决方案】逐字 > 子群内技术工程师总结原文 > 字面量「截至生成时无完结总结」；子群不可读时 `process_bullets=["子群未入群，无过程细节"]`。effective_status 取值＝已完结/已解决待关单/处理中/无法判定(无子群)，判定「实质已解决但官方未关单」看子群工程师总结块与客户确认语（脚本已抽好 signals 供参考，确认语已排除小二本人发言）；effective_evidence.message_id 必须是子群原文或卡片的真实 messageId，quote 必须是该消息原文子串，publish 用 sanitize_summary 机械校验（枚举+存在性+quote 子串），校验失败回退规则默认值并在文档留痕。few-shot 样例与溯源要求见 reference.md。
+2. 总结（每客户一个 subagent，并发）：读自己的 transcripts 文件与 collect 切片，按工单写 `outputs/summary-<date>-<key>.json`，字段 `{ "<工单ID>": {"problem": str, "process_bullets": [str], "solution": str, "effective_status": str, "effective_evidence": {"message_id": str, "quote": str}} }`。契约：只允许整理原文，不允许补充事实；problem 取材＝完结卡【问题描述】逐字 > 建单卡标题+客户首条原话；solution 取材＝完结卡【解决方案】逐字 > 子群内技术工程师总结原文 > 字面量「截至生成时无完结总结」；子群不可读时 `process_bullets=["子群未入群，无过程细节"]`。**process_bullets 必须精简合成、禁止逐条摘录群聊原文**（用户 2026-10-16 指令）：每单目标 3–6 条主线要点（客户核心诉求 → 工程师关键判断/方案 → 最终结果），合并同话题的往返追问，去掉逐条时间戳流水账，不透出服务人员与客户人名（用「客户」「工程师」「值班小二」等角色词；人名已在概览表的建单人/当前小二中呈现）。只整理原文不补充事实的要求同样适用于 bullets——合成＝压缩与归类，不是编造。publish 的 `lint_process_bullets`（gate.py，AGENTS.md 规则 N）机械识别「疑似流水账」签名（条数 > MAX_BULLETS 或过半 bullet 以时间戳开头）并在发布行提示，只报不改。effective_status 取值＝已完结/已解决待关单/处理中/无法判定(无子群)，判定「实质已解决但官方未关单」看子群工程师总结块与客户确认语（脚本已抽好 signals 供参考，确认语已排除小二本人发言）；effective_evidence.message_id 必须是子群原文或卡片的真实 messageId，quote 必须是该消息原文子串，publish 用 sanitize_summary 机械校验（枚举+存在性+quote 子串），校验失败回退规则默认值并在文档留痕。few-shot 样例与溯源要求见 reference.md。
 3. 发布（脚本，客户间并发，含回读校验）：
    `python3 scripts/ticket.py publish --date <工单日>`
    合并 collect+summary → 按 [templates/daily-report.md](templates/daily-report.md) 渲染 → 文档缺失自动建（`dws doc create --folder <daily_doc_parent_node>`）→ 已存在且空才写，**非空默认跳过并报告**（`--force` 才覆盖）→ 写完 `doc read` 回读校验关键行。
@@ -47,6 +47,7 @@ D 日跑批记 **D-1（工单日）** 的工单，文档名 = 工单日（`YYYYM
 - asc 方向分页读消息（实测漏读）；脚本固定 desc/older。
 - 覆盖非空文档：publish 默认跳过非空文档，防冲掉手工内容。
 - 总结 subagent 编造事实：只能整理卡片/子群原文，溯源字段保留 messageId 与 chatRecord 链接。
+- process_bullets 逐条摘录群聊原文：必须是精简合成的主线要点（3–6 条，合并往返、去逐条时间戳、不透人名）；违反时 `lint_process_bullets` 在发布行提示「疑似流水账」（只报不改，见跑批流程第 2 步）。
 
 ## 维护操作
 
@@ -58,8 +59,8 @@ D 日跑批记 **D-1（工单日）** 的工单，文档名 = 工单日（`YYYYM
 | 回归哨兵 | `python3 tests/run-regression.py`（改正则/模板后必跑） |
 | 完成判定（巡检补偿依据） | `python3 scripts/ticket.py check --date <工单日>`（exit 0=今日已完成，stdout `DONE finished_at=…`；exit 3=缺失/过期，stdout `MISSING reason=marker_absent\|stale:finished_at`；exit 1=其他异常。纯读判定，无网络/写；巡检任务据退出码机械补偿，不靠 prompt 推理） |
 | 规范回写 | 每轮评审后更新 [AGENTS.md](AGENTS.md)（评审/度量发现的新规律同批回写，见 AGENTS.md 规则 M） |
-| 每日 09:00 跑批 | qoder_cron job（name: `neil-ticket 每日跑批 09:00`），触发本流程（工单日=昨天） |
-| 巡检补偿（窗口 09:00–12:30 每 30 分） | qoder_cron job（name: `neil-ticket 巡检补偿 工作日窗09-12每30分`，cron `*/30 9-12 * * *` Asia/Shanghai），完成判据＝当日 `outputs/run-<工单日>.json`（publish 收尾落盘，`finished_at`＝本次 publish 完成时刻），机械判定走上表「完成判定」check 子命令，exit 3 则补偿跑批。**双层止跑**：① 调度层——13:00 后调度器不再触发，当日补偿会话上限 8 个；② 会话层——check exit 0 或补偿核验通过后自禁用（best-effort 降噪），明日 09:00 跑批开始时再武装。顺利日实测目标＝09:00 跑批 1 会话 + 至多 1 个巡检确认会话 |
+| 每日 10:00 跑批 | qoder_cron job（name: `neil-ticket 每日跑批 10:00`，cron `0 10 * * *` Asia/Shanghai），触发本流程（工单日=昨天），结果发「问问」 |
+| 巡检补偿（10:30 / 11:30 / 12:30） | qoder_cron job（name: `neil-ticket 巡检补偿 10:30/11:30/12:30`，cron `30 10-12 * * *` Asia/Shanghai，即 10:30、11:30、12:30 三次），完成判据＝当日 `outputs/run-<工单日>.json`（publish 收尾落盘，`finished_at`＝本次 publish 完成时刻），机械判定走上表「完成判定」check 子命令，exit 3 则补偿跑批。**双层止跑**：① 调度层——12:30 后当日不再触发；② 会话层——check exit 0 秒退（不发消息），publish 另有机械幂等门（当日标记存在且无 `--force` 即 no-op），双重防重复跑。顺利日实测目标＝10:00 跑批 1 会话 + 0 个补偿会话 |
 
 互斥约定：跑批会话用 `outputs/.lock`（mtime<2h 视为进行中）+ `pgrep -f "ticket.py collect"` 双重检测，禁止两个跑批并发。
 

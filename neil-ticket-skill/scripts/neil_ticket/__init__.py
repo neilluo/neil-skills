@@ -17,7 +17,8 @@ from .parse import (RE_CONFIRM, RE_CONV_ID, RE_CREATE, RE_CREATOR, RE_DESC,
                     RE_TITLE_PLAIN, RE_XIAOER, _apply_create, _apply_done,
                     _blank_ticket, _note_subgroup, compute_signals,
                     double_unquote, parse_cards)
-from .gate import EFFECTIVE_ENUM, _norm, default_effective, sanitize_summary
+from .gate import (EFFECTIVE_ENUM, MAX_BULLETS, _RE_TS_PREFIX, _norm,
+                   default_effective, lint_process_bullets, sanitize_summary)
 from .render import (_carryover_ticket_section, _effective, _evidence_text,
                      _overview_row, _ticket_section, carryover_section,
                      esc_cell, esc_prose, render, verification_markers)
@@ -25,8 +26,8 @@ from .collect import (LIMIT, MAX_PAGES, PROBE_MAX_PAGES, PROBE_MSG_CAP,
                       _auto_join_gap, _build_slice, _probe_ticket,
                       _report_collect, cmd_collect, collect_one, probe_subgroup,
                       read_messages, resolve_cid_by_name)
-from .publish import (FOLLOWUP_DAYS, _carryover_data, _doc_folder_id,
-                      _folder_warning, _load_prev_collects,
+from .publish import (FOLLOWUP_DAYS, _bullets_note, _carryover_data,
+                      _doc_folder_id, _folder_warning, _load_prev_collects,
                       _load_summary_and_texts, _update_doc,
                       _verify_written, _write_run_marker, check_status,
                       cmd_check, cmd_publish, create_doc_idempotent,
@@ -49,6 +50,7 @@ __all__ = [
     "_apply_done", "_note_subgroup", "parse_cards", "compute_signals",
     # gate
     "EFFECTIVE_ENUM", "default_effective", "_norm", "sanitize_summary",
+    "MAX_BULLETS", "_RE_TS_PREFIX", "lint_process_bullets",
     # render
     "esc_cell", "esc_prose", "_effective", "_evidence_text", "_overview_row",
     "_ticket_section", "_carryover_ticket_section", "carryover_section",
@@ -61,8 +63,8 @@ __all__ = [
     "FOLLOWUP_DAYS", "list_nodes", "doc_markdown", "_doc_folder_id",
     "_folder_warning", "create_doc_idempotent", "followup_section",
     "_carryover_data", "_load_prev_collects", "_load_summary_and_texts",
-    "_update_doc", "_verify_written", "publish_one", "cmd_publish",
-    "_write_run_marker", "check_status", "cmd_check",
+    "_bullets_note", "_update_doc", "_verify_written", "publish_one",
+    "cmd_publish", "_write_run_marker", "check_status", "cmd_check",
     # cli
     "main",
 ]

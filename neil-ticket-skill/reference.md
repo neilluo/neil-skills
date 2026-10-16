@@ -89,16 +89,16 @@ workspace `nb9XJrQQ3D0RPXyA`（个人空间 mine space）。树：`2025`(真 fol
 
 ## 总结子代理契约 few-shot 样例（2026-10-14 真实数据验证）
 
-输入：海底捞 2026-10-13 工单 E261013EN4RBWM（PolarDB），子群 cid 由建单卡「催单」链接两次 URL-decode 得 `cidaRKQP6jRenmtQmIyfFQFqA==`，与完结卡 chatRecord 链接一致；子群 32 条原文可读。输出（字段名严格 problem / process_bullets / solution）：
+输入：海底捞 2026-10-13 工单 E261013EN4RBWM（PolarDB），子群 cid 由建单卡「催单」链接两次 URL-decode 得 `cidaRKQP6jRenmtQmIyfFQFqA==`，与完结卡 chatRecord 链接一致；子群 32 条原文可读。输出（字段名严格 problem / process_bullets / solution；**process_bullets 精简合成为主线要点，不透人名**，用「客户」「值班小二」「ADB 官方支持」等角色词）：
 
 ```json
 {
-  "problem": "客户（李阳达）反馈“这都是 PolarDB 的数据库，怎么页面的配置差异这么大”，想知道如何根据数据库连接地址识别真实的实例类型（PolarDB、RDS、ADB）及具体配置（CPU、内存、节点数）。",
+  "problem": "客户反馈“这都是 PolarDB 的数据库，怎么页面的配置差异这么大”，想知道如何根据数据库连接地址识别真实的实例类型（PolarDB、RDS、ADB）及具体配置（CPU、内存、节点数）。",
   "process_bullets": [
-    "值班小二李涛说明：根据连接地址看第一个是 RDS MySQL、第二个是 PolarDB MySQL，并非同一个产品，故页面配置差异大。",
-    "李涛按连接地址搜到实例：rm-2ze9kictsgpfiu7bt 规格 mysql.n4.xlarge.2c（8核32GB）高可用实例；pc-2ze285905v39np1f8 规格 polar.mysql.g4.4xlarge（32核128GB）含一个只读节点。",
-    "客户追问另一个 ADB 数据库 amv-2zevyxl9b47km8f4，李涛查到资源组 serverless 计算最大资源 64ACU、user_default 计算最大资源 48ACU、计算预留资源 48ACU。",
-    "客户询问节点数，李涛邀请 ADB 官方入群确认，回复为 6 个 8ACU 节点，ADB官方支持补充控制台页面集群配置信息可查看。",
+    "值班小二说明：根据连接地址判断第一个是 RDS MySQL、第二个是 PolarDB MySQL，并非同一产品，故页面配置差异大。",
+    "按连接地址定位实例规格：rm-2ze9kictsgpfiu7bt 为 mysql.n4.xlarge.2c（8核32GB）高可用实例；pc-2ze285905v39np1f8 为 polar.mysql.g4.4xlarge（32核128GB）含一个只读节点。",
+    "客户追问另一 ADB 数据库 amv-2zevyxl9b47km8f4，值班小二查到资源组 serverless 计算最大 64ACU、user_default 计算最大 48ACU、计算预留 48ACU。",
+    "客户询问节点数，值班小二邀请 ADB 官方入群确认为 6 个 8ACU 节点，并补充控制台页面可查看集群配置。",
     "客户确认“没有了，多谢”，工程师给出总结并结单，工单状态变更为已完成。"
   ],
   "solution": "根据连接地址中的实例ID到控制台定位对应实例查询类型与规格：rm-2ze9kictsgpfiu7bt 为 RDS MySQL 高可用实例（mysql.n4.xlarge.2c，8核32GB）；pc-2ze285905v39np1f8 为 PolarDB MySQL 实例（polar.mysql.g4.4xlarge，32核128GB），含一个只读节点；amv-2zevyxl9b47km8f4 为 ADB Serverless 集群（资源组计算最大 64ACU、用户默认计算最大 48ACU、计算预留 48ACU，6 个 8ACU 节点）。页面配置差异的原因是三个连接地址分属不同云产品，无法直接从 URL 解析，需按实例ID在控制台查询。",
@@ -108,6 +108,37 @@ workspace `nb9XJrQQ3D0RPXyA`（个人空间 mine space）。树：`2025`(真 fol
 ```
 
 溯源要求：summary JSON 之外，子代理须在汇报里列支撑句的 messageId/时间戳（problem 2 条、process 逐 bullet、solution 指向工程师总结与完结卡）。
+
+### process_bullets 反例：逐条摘录 vs 精简合成（2026-10-15 真实工单 E2610143Y5HYZP）
+
+用户 2026-10-16 指令：process_bullets 把群聊原文几乎原封不动摘录下来是不对的。以下是同一张工单（DataWorks 独享资源组测试 MySQL 数据源连通失败）的错误写法与正确写法对照，`lint_process_bullets` 会把错误写法在发布行标为「疑似流水账」：
+
+**反例（16 条逐条时间戳流水账，会被 lint 命中）**——每条以时间戳开头、把客户与工程师的每一句往返原样搬进来、透出真实人名：
+
+```
+"2026-10-14 16:28 阿里云服务台播报：胡凯隆提出的“数据源连接问题”已创建企业工单 E2610143Y5HYZP…当前值班小二曹咪…",
+"16:29 胡凯隆在专项群发出两张截图并首述：“问题描述： 网段加了白名单，数据源还是无法测试通过”。",
+"16:30 TAM-曹咪首次响应：…建议先确认资源组是否已添加指向数据源所在VPC或交换机的路由…",
+"16:51 胡凯隆引用“…”追问…；16:52 曹咪答复…",
+"16:53 胡凯隆贴出报错…",
+"16:54 曹咪反问…；胡凯隆答复…",
+"16:59 … 17:01 … 17:03 … 17:06 … 17:07 … 17:18 … 17:22 … 17:23 … 17:24 … 17:26 … 17:28 … 17:40 … 17:45 …"（逐条流水，共 16 条）
+```
+
+**正例（4 条主线要点，合并往返、去时间戳、不透人名）**：
+
+```json
+{
+  "process_bullets": [
+    "建单与首响：客户报 DataWorks 独享资源组测试 MySQL 数据源连通失败（connect timed out），称“网段已加白名单仍无法测试通过”；值班小二首次响应，判断需排查资源组到数据源 VPC 的路由、端口及白名单网段是否一致。",
+    "定位白名单争议：反复围绕报错中的 192.168 网段——值班小二澄清那是资源组主网卡 IP（阿里云统一分配，非客户配的 172 交换机网段），内网连通须加入 RDS 白名单；客户因生产隔离库无法添加，工程师给出替代方案（改走公网 NAT 网关 + EIP 加白）。",
+    "找到真因：客户提到同环境其他 MySQL 数据源可连通，值班小二判断卡在配置，引导核对数据源连接串，最终发现数据库名称填错（jdbc:mysql://…/hdl_data_insight）。",
+    "解决与关单：客户修正数据库名后连通成功并确认“解决了哈就是数据库不对”；次日推送解决方案并结单，工单已完结。"
+  ]
+}
+```
+
+要点：正例保留全部关键事实（报错、网段争议、真因、结果）但把十几句往返压成 4 条主线；人名一律换角色词（客户/值班小二/工程师）；时间戳只在确有必要时保留极少数关键节点，不做逐句标注。
 
 ## 卡片逐字样本
 
