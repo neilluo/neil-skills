@@ -17,7 +17,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 from .config import OUT_DIR, cfg_tz, doc_title, load_config, select_customers
-from .gate import lint_process_bullets, sanitize_summary
+from .gate import lint_process_bullets, sanitize_sentiment, sanitize_summary
+from .parse import PRODUCTION_KEYWORDS, SAFETY_KEYWORDS, _days_span, _is_stalled
 from .render import carryover_section, esc_cell, render, verification_markers
 from .transport import RETRY_CREATE, RETRY_TRANSPORT, run_dws
 
@@ -162,14 +163,45 @@ def _load_summary_and_texts(date_str, key, has_tickets):
     return summary, summary_missing, texts
 
 
-def _carryover_data(key, prev_collects, tz_label="+08:00"):
+def _reage_urgency(pslice, carry, report_date):
+    """结转工单的 urgency 重新按报告日锚点计算（修复 2026-10-16）：D0 slice 里的
+    urgency 是 D0 采集时算的，days_span/stalled 锚在 D0；但结转单在报告日仍未完结，
+    应显示到报告日为止的存活天数与僵单状态（否则跨多日的结转单永远显示 ⚪，
+    漏掉用户「连续几天没完事要重点关注」的诉求）。days_span/completed/stalled 按报告日
+    重算；标题类硬信号 safety_hit/production_hit 从 title 纯重算（D0 可能是无 urgency
+    的旧格式 collect，不能信旧值）；urge_reason/last_active/readable 复用 D0 urgency
+    （需子群消息，结转层无原文，无法重算）。纯函数、不读盘，返回 re-aged pslice 副本。
+    report_date 由 publish_one 传 date_str（上游 _load_prev_collects 已解析过，实际不会
+    非法）；仍加 try/except 兜底，与 _days_span/_is_stalled 的解析防御一致，畸形则原样返回。"""
+    try:
+        today = datetime.strptime(report_date, "%Y-%m-%d").date()
+    except ValueError:
+        return pslice
+    out = {**pslice, "signals": {k: dict(v) for k, v in pslice.get("signals", {}).items()}}
+    for tid in carry:
+        t = pslice["tickets"].get(tid, {})
+        title = t.get("title", "") or ""
+        old = (pslice.get("signals", {}).get(tid, {}) or {}).get("urgency", {}) or {}
+        span = _days_span(tid, t.get("created_at", ""), "", today)
+        stalled = _is_stalled(span, "", old.get("last_active", ""),
+                              old.get("readable", False), today)
+        out["signals"].setdefault(tid, {})["urgency"] = {
+            **old, "days_span": span, "completed": False, "stalled": stalled,
+            "safety_hit": next((k for k in SAFETY_KEYWORDS if k in title), ""),
+            "production_hit": next((k for k in PRODUCTION_KEYWORDS if k in title), "")}
+    return out
+
+
+def _carryover_data(key, prev_collects, tz_label="+08:00", report_date=""):
     """零工单结转（用户 2026-10-15 指令「如果没有工单的话，可以复用一下昨天的」）：
     当日零新工单时，回看 ≤7 天（prev_collects 由 cmd_publish 经 _load_prev_collects
     提供，按近→远排列）找该客户最近一个有工单的日期 D0，取 D0 中官方未完结
     （completed_at 为空）的工单结转。内容复用 D0 的 summary/transcripts，
     effective_status 经 sanitize_summary 以 D0 slice 校验（复用规则 E 门禁，失败
     自动回退规则值并留痕）。D0 无未完结工单或无任何历史 → 返回 ""（维持纯零工单
-    说明，不再回看更早日）。返回结转节 markdown（render.carryover_section 纯函数）。"""
+    说明，不再回看更早日）。返回结转节 markdown（render.carryover_section 纯函数）。
+    report_date 非空时，结转单 urgency 按报告日重新锚定（_reage_urgency），
+    使跨多日的未完结结转单正确升档关注等级。"""
     for pdate, prev in prev_collects:
         pslice = (prev or {}).get("customers", {}).get(key)
         if not pslice or not pslice.get("ticket_order"):
@@ -177,11 +209,14 @@ def _carryover_data(key, prev_collects, tz_label="+08:00"):
         carry = [tid for tid in pslice["ticket_order"]
                  if not pslice["tickets"].get(tid, {}).get("completed_at")]
         if not carry:
-            return ""  # D0 存在但全完结 → 维持零工单说明，不继续回看更早日
+            return "", []  # D0 存在但全完结 → 维持零工单说明，不继续回看更早日
         summary, _, texts = _load_summary_and_texts(pdate, key, True)
         summary = sanitize_summary(summary, pslice, texts)
+        summary = sanitize_sentiment(summary, pslice, texts)
+        if report_date:
+            pslice = _reage_urgency(pslice, carry, report_date)
         return carryover_section(pdate, carry, pslice, summary, tz_label)
-    return ""  # 无任何历史
+    return "", []  # 无任何历史
 
 
 def _update_doc(node_id, tmp, force):
@@ -217,6 +252,17 @@ def _bullets_note(summary, slice_):
     return f"；总结疑似流水账[{'; '.join(hits)}]" if hits else ""
 
 
+def _watermark(summary_missing, summary):
+    """文档级水印：①总结子代理整体缺失 → 规则回退渲染；②sentiment 字段缺失
+    （旧总结/流水线未产出情绪，AGENTS.md 规则 Q）→ 提示情绪未评估，避免误读为「无情绪」。"""
+    wm = ""
+    if summary_missing:
+        wm += "> 注：总结子代理缺失，本篇为规则回退渲染。\n"
+    if any((s or {}).get("sentiment_missing") for s in (summary or {}).values()):
+        wm += "> 注：本篇未产出情绪判定（sentiment 缺失），关注等级仅按确定性信号合成，负面情绪可能漏标。\n"
+    return wm
+
+
 def publish_one(customer, date_str, collect, force, cfg, prev_collects):
     slice_ = collect["customers"].get(customer["key"])
     if slice_ is None:
@@ -224,11 +270,11 @@ def publish_one(customer, date_str, collect, force, cfg, prev_collects):
         return f"[publish] {customer['key']} 跳过：{err}"
     summary, summary_missing, texts = _load_summary_and_texts(
         date_str, customer["key"], bool(slice_["ticket_order"]))
-    summary = sanitize_summary(summary, slice_, texts)
-    watermark = ("> 注：总结子代理缺失，本篇为规则回退渲染。\n" if summary_missing else "")
+    summary = sanitize_sentiment(sanitize_summary(summary, slice_, texts), slice_, texts)
+    watermark = _watermark(summary_missing, summary)
     carryover = ("" if slice_["ticket_order"] else
                  _carryover_data(customer["key"], prev_collects,
-                                 cfg.get("timezone", "+08:00")))
+                                 cfg.get("timezone", "+08:00"), date_str))
     md = render(customer, date_str, slice_, summary,
                 followup_section(date_str, collect, prev_collects, customer["key"]),
                 watermark=watermark, tz_label=cfg.get("timezone", "+08:00"),

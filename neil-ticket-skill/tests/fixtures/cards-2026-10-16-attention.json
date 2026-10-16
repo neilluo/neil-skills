@@ -1,0 +1,84 @@
+{
+  "_comment": "关注等级 fixture。messages=主群机器人卡片（喂 parse_cards）；subgroup_messages=子群消息（按 tid 分组，喂 compute_urgency_signals 探催单）。催单事件真实形态是子群里阿里云服务台的独立机器人消息（正文含『催单信息：<font >业务阻塞</font>』），不在建单卡里——建单卡 Tips 的『催单』只是每张卡都有的按钮链接。此形态 2026-10-16 于真实 transcripts-2026-10-13-haidilao.json 的 E2610134H5HZYU 实测。",
+  "main_cid": "cidgMyijbO61zaPBGdPuoFCMQ==",
+  "expected": {
+    "order": ["E2610144URGE01", "E2610164SAFE01", "E2610164DONE01"],
+    "urge_reason": "业务阻塞",
+    "tickets": {
+      "E2610144URGE01": {
+        "title": "数据库查询突然变慢超时",
+        "creator": "张腾龙",
+        "xiaoer": "楚成龙",
+        "status": "待响应",
+        "subgroup_cid": "cidATTNURGE01==",
+        "created_at": "2026-10-14 09:12:33",
+        "completed_at": ""
+      },
+      "E2610164SAFE01": {
+        "title": "waf注入漏洞告警排查",
+        "creator": "左明",
+        "xiaoer": "邱成相",
+        "status": "处理中",
+        "subgroup_cid": "cidATTNSAFE01==",
+        "created_at": "2026-10-16 10:05:20",
+        "completed_at": ""
+      },
+      "E2610164DONE01": {
+        "title": "咨询日志字段含义",
+        "creator": "聂伟",
+        "xiaoer": "史月函",
+        "status": "已完结",
+        "subgroup_cid": "cidATTNDONE01==",
+        "created_at": "2026-10-16 09:12:03",
+        "completed_at": "2026-10-16 18:30:41"
+      }
+    }
+  },
+  "messages": [
+    {
+      "conversationId": "cidgMyijbO61zaPBGdPuoFCMQ==",
+      "createTime": "2026-10-14 09:12:33",
+      "messageId": "msgATTNURGE01==",
+      "sender": "阿里云服务台",
+      "senderId": "Diivc8bb8kgXwKwThE4FF6WkEbMk4CXZqP",
+      "text": "@张腾龙  已为您创建新企业工单 \n\n 企业工单标题：<font color=#096DD9>数据库查询突然变慢超时</font> \n\n 企业工单ID：E2610144URGE01 \n\n 企业工单状态：待响应  \n\n 当前小二：楚成龙 \n\n 请[点击此处](dingtalk://dingtalkclient/page/link?pc_slide=true&amp;url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Fgroup%2FjoinSubgroup%3FtaskId%3D4846437%26departmentId%3D139087160%26language%3D%26openconversitionid%3DcidgMyijbO61zaPBGdPuoFCMQ%253D%253D) 进入企业工单专项群。\n\n Tips：如您在企业工单处理过程中有阻塞，可以点击[催单](dingtalk://dingtalkclient/page/link?pc_slide=true&amp;url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Ftask%2Furge%3Ftid%3D4846437%26departmentId%3D139087160%26snapshot%3D%26language%3D%26openconversitionid%3DcidATTNURGE01%253D%253D)为您加急处理。"
+    },
+    {
+      "conversationId": "cidgMyijbO61zaPBGdPuoFCMQ==",
+      "createTime": "2026-10-16 10:05:20",
+      "messageId": "msgATTNSAFE01==",
+      "sender": "阿里云服务台",
+      "senderId": "Diivc8bb8kgXwKwThE4FF6WkEbMk4CXZqP",
+      "text": "@左明  已为您创建新企业工单 \n\n 企业工单标题：<font color=#096DD9>waf注入漏洞告警排查</font> \n\n 企业工单ID：E2610164SAFE01 \n\n 企业工单状态：处理中  \n\n 当前小二：邱成相 \n\n 请[点击此处](dingtalk://dingtalkclient/page/link?pc_slide=true&amp;url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Fgroup%2FjoinSubgroup%3FtaskId%3D4846501%26departmentId%3D139087160%26language%3D%26openconversitionid%3DcidgMyijbO61zaPBGdPuoFCMQ%253D%253D) 进入企业工单专项群。\n\n Tips：如您在企业工单处理过程中有阻塞，可以点击[催单](dingtalk://dingtalkclient/page/link?pc_slide=true&amp;url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Ftask%2Furge%3Ftid%3D4846501%26departmentId%3D139087160%26snapshot%3D%26language%3D%26openconversitionid%3DcidATTNSAFE01%253D%253D)为您加急处理。"
+    },
+    {
+      "conversationId": "cidgMyijbO61zaPBGdPuoFCMQ==",
+      "createTime": "2026-10-16 09:12:03",
+      "messageId": "msgATTNDONE01==",
+      "sender": "阿里云服务台",
+      "senderId": "Diivc8bb8kgXwKwThE4FF6WkEbMk4CXZqP",
+      "text": "@聂伟  已为您创建新企业工单 \n\n 企业工单标题：<font color=#096DD9>咨询日志字段含义</font> \n\n 企业工单ID：E2610164DONE01 \n\n 企业工单状态：处理中  \n\n 当前小二：史月函 \n\n 请[点击此处](dingtalk://dingtalkclient/page/link?pc_slide=true&amp;url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Fgroup%2FjoinSubgroup%3FtaskId%3D4846502%26departmentId%3D139087160%26language%3D%26openconversitionid%3DcidgMyijbO61zaPBGdPuoFCMQ%253D%253D) 进入企业工单专项群。\n\n Tips：如您在企业工单处理过程中有阻塞，可以点击[催单](dingtalk://dingtalkclient/page/link?pc_slide=true&amp;url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Ftask%2Furge%3Ftid%3D4846502%26departmentId%3D139087160%26snapshot%3D%26language%3D%26openconversitionid%3DcidATTNDONE01%253D%253D)为您加急处理。"
+    },
+    {
+      "conversationId": "cidgMyijbO61zaPBGdPuoFCMQ==",
+      "createTime": "2026-10-16 18:30:41",
+      "messageId": "msgATTNDONE02==",
+      "sender": "阿里云服务台",
+      "senderId": "Diivc8bb8kgXwKwThE4FF6WkEbMk4CXZqP",
+      "text": "@聂伟   企业工单已完结 \n\n 企业工单标题：咨询日志字段含义 \n\n 企业工单ID：E2610164DONE01 \n\n 企业工单总结：【问题描述】客户咨询 loongcollector 采集日志中 __tag__ 字段的含义与取值来源。 【解决方案】1、说明 __tag__ 为采集端自动附加的元信息标签，记录来源主机与采集配置。 2、提供字段对照说明文档链接，客户确认理解无误。 \n\n 聊天记录：[查看](dingtalk://dingtalkclient/page/link?url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Fgroup%2FchatRecord%3FtaskId%3D4846502%26messageId%3Dnull%26openconversitionid%3DcidATTNDONE01%253D%253D&amp;popup_wnd=true&amp;height=800&amp;width=600&amp;title=%e8%81%8a%e5%a4%a9%e8%ae%b0%e5%bd%95)"
+    }
+  ],
+  "subgroup_messages": {
+    "E2610144URGE01": [
+      {
+        "createTime": "2026-10-14 09:15:00",
+        "messageId": "msgSUBURGE01==",
+        "sender": "阿里云服务台",
+        "senderId": "Diivc8bb8kgXy2ZtiSPZkAeVf72yHwUwqRw",
+        "text": "#### @张腾龙 您好，钉群服务已经收到您的催单，内部已优先为您处理，请您耐心等待。如您的数据丢失、数据受损或线上业务不可用，请点击[[应急](dingtalk://dingtalkclient/page/link?pc_slide=true&amp;url=https%3A%2F%2Fm-authding.gts.work%2Fyunqi-customer-h5%2Ftask%2Furgent%3Ftid%3D4846437%26departmentId%3D139087160%26snapshot%3D%26language%3D%26openconversitionid%3DcidATTNURGE01%253D%253D)]。\n ****** \n >###### 催单信息：<font >业务阻塞</font> \n >###### 企业工单ID：E2610144URGE01 \n >###### 企业工单状态：<font color=#389e0d>待响应</font> \n >###### 当前值班小二：楚成龙"
+      }
+    ],
+    "E2610164SAFE01": [],
+    "E2610164DONE01": []
+  }
+}

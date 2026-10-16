@@ -50,8 +50,7 @@ workspace `nb9XJrQQ3D0RPXyA`（个人空间 mine space）。树：`2025`(真 fol
 
 ## 开放项与取舍记录（GLM-5.3 评审 2026-10-14）
 
-- **催单事件未建模**：主群里催单事件的报文样式尚无逐字样本，不臆造解析器；SKILL.md 契约已撤下「催单」宣称。拿到样本后补 parse_cards 分支 + 日报催单计数（客户不满信号）。
-- **规范单一事实源与催单采样路径已在列**：各轮评审/度量沉淀的工程规范以 [AGENTS.md](AGENTS.md) 为单一事实源（新规律同批回写，AGENTS.md 规则 M）；催单建模的采样路径已在列——先把主群内含「催单」关键词的消息原样落盘采样，攒够逐字样本再补 parse_cards 分支，不臆造（Kimi-K3 第二轮业务#2）。
+- **催单信号已接入关注等级（2026-10-16）**：催单事件此前未建模；现由 `_detect_urge`（parse.py）从**子群消息**抽取「催单信息：<font >业务阻塞</font>」→ `compute_urgency_signals.urge_reason` → `compute_attention` 命中即升 🔴重点（规则 R）。实测样本 outputs/transcripts-2026-10-13-haidilao.json 工单 E2610134H5HZYU（客户催单，子群机器人回执含「业务阻塞」）。**仍未做**：把催单当独立工单事件类型建模（parse_cards 分支 + 日报催单计数指标）——当前只作为关注等级硬信号消费，不单独计数；催单事件是子群消息而非主群建单/完结卡，若要计数需在子群探读侧统计，不臆造主群解析分支（沿用 Kimi-K3 第二轮业务#2 采样纪律）。
 - **probe 边界=now 是刻意取舍**：子群读入窗口后消息（次日客户确认、工程师补总结）正是「实质状态」的证据链；评审建议的「边界改窗口末」省 30-50% 子群调用但砍掉该证据，否决。子群消息已按 messageId 去重、300 条封顶。
 - **补跑 >3 天**：子群可能已解散。诚实口径（Kimi-K3 冲突#1 裁决）：130003 本身**不能区分**未入群与已解散，「已解散」标签只在错误文本显式含解散/disband 时才打；文档「未入群(降级)」列可能实际含已解散case，补跑老日期时勿据此催 TAM。probe_error 三值：未入群/已解散/不可读，渲染三分支。
 - **第二轮交叉评审（Ultimate + Kimi-K3，2026-10-14）**已修：publish 失败隔离、跟进节按客户隔离+回看 7 天、sanitize 按工单隔离 allowed+强制引证+卡片原文入 texts、130003 数字边界+一层嵌套信封、probe 空页告警上抛、不可读三分支渲染、create 非零 rc 先查重、collect 落盘进隔离、最早建单卡改比较式、完结卡缺标题 guard、翻页 boundary 不前进/ MAX_PAGES 耗尽告警、解析哨兵（卡片缺工单ID/未配置服务台发送者）、窗口外引证标注、总结缺失文档水印。报告：[tests/review-2026-10-14-ultimate-a.md](tests/review-2026-10-14-ultimate-a.md)、[tests/review-2026-10-14-ultimate-b.md](tests/review-2026-10-14-ultimate-b.md)、[tests/review-2026-10-14-kimi-k3.md](tests/review-2026-10-14-kimi-k3.md)。
@@ -61,6 +60,8 @@ workspace `nb9XJrQQ3D0RPXyA`（个人空间 mine space）。树：`2025`(真 fol
 - **第四轮：包结构落地（2026-10-15）**：单文件 scripts/ticket.py（52 函数）拆为九模块包 scripts/neil_ticket/（config/transport/parse/gate/render/collect/publish/cli/__init__），依赖方向 config←transport←parse←gate←render←collect/publish←cli、只准向左依赖、零循环；原 ticket.py 保留为兼容 shim（星号重导出 + monkeypatch 写入转发），`python3 scripts/ticket.py collect/publish` 与 `import ticket as T` 契约不变。触发点：用户批评「单文件谈不上扩展」；分层渗漏证据在第三轮 Qwen3.8-Max §4（run_dws 内嵌门禁、render 反依赖、followup_section 磁盘 IO 等）与 DeepSeek-V4-Pro（换输出目标需先拆 publish/alidocs 耦合）。度量复测（scripts/analyze-metrics.py 已改全包扫描）：跨模块重复行占比 0.00%（红线 <5%）、死代码 0 个、>40 行函数 0 个（最长 render/parse_cards 35 行）。工程契约沉淀为 AGENTS.md 规则 P；四个死配置键消费与规则 A require 合规化同批落地（见「配置键消费表」与 AGENTS.md 规则 A/K）。
 - **零工单结转（用户 2026-10-15 指令「如果没有工单的话，可以复用一下昨天的」）**：某客户当日窗口零新工单时，回看 ≤7 天历史 collect（复用 `publish._load_prev_collects`），取该客户最近一个有工单的日期 D0，结转 D0 中官方未完结（`completed_at` 为空）的工单——「三、零工单说明」节替换为「三、零工单说明与昨日结转」，先一句「窗口内无新工单；以下工单结转自 <D0>，官方状态仍未完结」，再对每张结转工单渲染与正常详情同形的块（复用 `render._ticket_section`，块首加「- 结转自：<D0> 日报，当日无新工单」行）。内容复用 D0 的 `outputs/summary-<D0>-<key>.json`，缺失则回退 D0 collect 的 `desc_card/sol_card` 与规则默认；`effective_status` 复用 D0 summary 值并经 `sanitize_summary` **以 D0 slice 校验**（allowed 用 D0 slice 的建单/完结卡 id + subgroup_msg_ids），失败回退规则值并留痕（复用既有门禁，不新造）。概览表保持零行占位、不重复列结转工单（避免与「当日事件」口径混淆）。取舍：D0 存在但全完结或无任何历史 → 维持纯零工单说明节，**不再回看更早日**（只认最近一个有工单的日）；有新工单的日结转节不出现。装配在 `publish._carryover_data`（IO+门禁），纯渲染在 `render.carryover_section`（经 render 的 `carryover` 参数注入替换零工单节），符合分层依赖方向。回归 tests/run-regression.py 含正控（结转自/tid/D0 日期出现、旧文案被替换、概览零行占位、引证经 D0 slice 校验保留）、失败分支（非法引证回退留痕）与负控（prev 全完结→纯零工单说明）。
 - **云端（QCA）可行性调研（2026-10-15，只读调研未建资源）**：结论＝**部分可跑通但不采用**。四问证据摘要：① dws CLI 有 linux 包（v1.0.64，GitHub release），云端环境可安装；② 云端网络 unrestricted，可达 api.dingtalk.com / alidocs.dingtalk.com；③ 登录态：`dws auth export/import` 设计上跨机可用，但 QCA vault 不可载入、且无文件上传类 MCP 工具，认证包只能经 env var base64（≤64KB）或 REST 投递；④ 调度：`create_forward_schedule` 支持 cron+timezone，但云端内置工具无 Task/subagent 能力、单 Turn 30 分钟上限、存储 24h 临时。不采用理由：总结 subagent 步（每客户一并发子代理，AGENTS.md 规则 N）无法原生并发 + 认证包上云泄漏面扩大（dws refresh 有效期至 2026-11-14、滚动 30 天；若未来上云建议：最小 scope、单组织 profile、到期不续、异常即 `dws auth reset` + 钉钉侧吊销）。本地 qoder_cron（每日 09:00 跑批 + 每 30 分钟完成标记巡检补偿，见 SKILL.md 维护操作；完成判据＝publish 收尾写的 `outputs/run-<工单日>.json`）为当前零改造路径。
+- **情绪识别走 LLM 提议+脚本门禁而非纯正则（用户 2026-10-16 指令，工单连续性/负面情绪/关注等级功能同批）**：研究 subagent 2026-10-16 于三天真实 transcripts 实测——纯正则会误伤友好用语（E2610143Y5HYZP 客户「好的，谢谢[捂脸哭]」的 `[捂脸哭]` 是客气表情，词表匹配「哭」会假报负面），也会漏掉无负面关键词的质疑（E2610134H5HYPU 客户「应该不是这个原因」「这个是线上任务，不能随意重启」——无脏词却表达不认同/受阻）。故情绪语义判断交 subagent，脚本 `sanitize_sentiment` 只校验引证真实性（message_id 存在 + quote 原文子串 + 按工单隔离）防编造，与 effective_status（规则 E）、人名脱敏（规则 N）同一「LLM 提议+脚本门禁、语义不做机械保证」取舍。确定性可判的部分（催单事件 `_detect_urge`、安全/生产标题词表、存活天数、僵单）才走纯脚本，情绪与硬信号分工见「关注等级判定」节。
+- **第五轮：交叉 code review 修复（2026-10-17，两个不同 focus 的 review subagent 并行）**：关注等级功能落地后交叉评审，两模型独立收敛到同一组缺陷，已全部修复并补回归：① 【P1 门禁健壮性】`sanitize_sentiment`/`sanitize_summary` 遇 evidence 非 dict（LLM 结构异常）会 `AttributeError` 崩溃而非回退，且「空 quote + 真实 message_id」可绕过子串校验（规则 E 明令禁止）——抽 `_evidence_bad` 共用核心（两 sanitize 共享，消除引证校验漂移），补 `<evidence结构异常>`/`<空quote>` 两个失败分支；② 【P1 虚标】render `_sentiment_line` 的「引证校验失败回退」标记原写在「轻微/明显」分支——但 sanitize 失败时 level 已被强制回退「无法判定」，该分支永不可达（文档承诺了代码没落地，违反规则 L/M）——移到「无法判定」分支按 `sentiment_invalid_evidence` 区分文案，与 effective_status 侧可观测性对齐；③ 【P1 文档漂移】AGENTS.md 规则 P 依赖清单未含 render→parse / publish→parse（本次新增的向左合规依赖）——已补；④ 【P2】compute_attention 的 reason 文案在 span=0 时谎称「跨天未完结」、`_reage_urgency` 的 strptime 无兜底、`_render_values` 死参 summary、`_attention_section` reasons 未过 esc_prose（规则 G）、RE_URGE 不兼容半角冒号、词表未逐字 pin、`compute_attention` 的 ticket 形参未用（保留契约位，已注释）——均修。度量复测：跨模块重复 0.00%、死代码 0、>40 行函数 0（`_evidence_bad` 抽取后 sanitize_sentiment 由 40 降至 38 行）。两 review 均确认核心设计（确定性信号纯脚本 + 情绪 LLM 提议/脚本门禁 + 结转 re-age + `_detect_urge` 扫子群）落地正确、判级优先级无实质漏洞。
 
 ## 实质状态（effective_status）
 
@@ -69,6 +70,45 @@ workspace `nb9XJrQQ3D0RPXyA`（个人空间 mine space）。树：`2025`(真 fol
 - 取值枚举单一事实源＝scripts/neil_ticket/gate.py 的 `EFFECTIVE_ENUM` 常量（shim 可达）；本节只引用不复制枚举（改取值须改常量并按 AGENTS.md 规则 L 同步 SKILL/reference/tests）。各值语义（仅注释，非枚举定义）：已完结＝有官方完结卡；已解决待关单＝无完结卡但实质已解决；处理中＝子群可读但无解决信号；无法判定(无子群)＝子群不可读降级。
 - 确定性信号（脚本 compute_signals）：子群内含【解决方案】且 >80 字的消息＝工程师总结块；命中确认语正则（没有了/谢谢/解决了/好的 收到/没问题/可以关单/恢复了/正常了）且 <120 字＝客户确认。
 - 判定分工：子代理给 effective_status + effective_evidence{message_id, quote}；publish 用 sanitize_summary 机械校验 message_id 存在于子群原文/卡片 id 集合，失败回退 default_effective（规则默认）并在文档标注「引证校验失败回退规则」——LLM 提议、脚本门禁。
+
+## 关注等级判定（AGENTS.md 规则 R）
+
+三档关注等级由 parse.py `compute_attention(ticket, urgency, sentiment_level)` 纯函数合成，返回 `(emoji, level_name, [触发原因])`，注入日报「零、重点关注」节 + 概览表「关注」列 + 详情块头 emoji。输入分两类：**确定性信号**（`compute_urgency_signals` 脚本算，collect 写入 `slice.signals[tid].urgency`）与**情绪**（`sentiment.level`，LLM 提议、经 `sanitize_sentiment` 门禁，见「情绪判定门禁」节）。任一条件命中即升该档，🔴 优先于 🟡：
+
+| 档位 | 触发条件（任一命中即升） | 信号来源 |
+|---|---|---|
+| 🔴 重点 | 催单事件 `urge_reason` 非空（`_detect_urge` 命中子群消息「催单信息：<font>业务阻塞</font>」）；安全类标题命中 `safety_hit`（SAFETY_KEYWORDS）；未完结且情绪「明显」；情绪「明显」 | urge_reason/safety_hit 确定性 + sentiment LLM |
+| 🟡 留意 | 跨天未完结（`days_span≥2` 且 `completed` 为假）；跨天已完结（`days_span≥2` 且 `completed`，关注服务时效）；情绪「轻微」；生产故障标题命中 `production_hit`（PRODUCTION_KEYWORDS）；疑似僵单 `stalled` | days_span/production_hit/stalled 确定性 + sentiment LLM |
+| ⚪ 常规 | 其余（当天完结普通问答 `completed` 且 `days_span==0`／建单无应答但子群不可读），触发原因列「当天完结普通问答」或「常规问答」 | — |
+
+- 渲染：`_attention_section` 只列 🔴🟡（红在前黄在后，同档按 ticket_order），全常规输出「今日无重点关注工单（全部为常规问答）」；每行 `- {emoji} **{tid}** {标题}（{level}）：{原因；分隔}`。
+- 结转块也合成关注等级（`carryover_section` 按 D0 slice 的 urgency + D0 summary 的 sentiment）。
+
+## 硬信号风险词表（AGENTS.md 规则 R，parse.py 常量）
+
+关注等级的确定性硬信号，命中即升档。词表定义在 parse.py 顶部常量便于统一审计（与门禁枚举「文档只引用常量名不复制值」相反，此处逐字复制实际值供审计）；改词表须按规则 L 三处同批（parse.py 常量 + 本节 + 回归断言）。以下为代码实际值：
+
+- `SAFETY_KEYWORDS`（安全类标题命中 → 🔴重点，经 `safety_hit`）：`("漏洞", "注入", "绕过", "泄露", "越权", "攻击", "安全风险", "waf")`
+- `PRODUCTION_KEYWORDS`（生产故障类标题命中 → 🟡留意，经 `production_hit`）：`("生产", "不可用", "宕机", "故障", "挂了", "影响业务", "业务阻塞", "无法访问", "报错", "异常", "中断", "超时")`
+
+命中判据：`next((k for k in KEYWORDS if k in title), "")`，对**工单标题**做子串匹配（`title` 为空则不命中）。催单信号 `urge_reason` 由 `_detect_urge` 探测：真实催单事件是**子群里「阿里云服务台」发出的独立机器人消息**（正文含「催单信息：<font >业务阻塞</font>」，2026-10-16 于 outputs/transcripts-2026-10-13-haidilao.json 的 E2610134H5HZYU 实测），**不在建单卡里**——建单卡 Tips 的「催单」只是每张卡都有的按钮跳转链接（`RE_URGE` 只匹配「催单信息：」前缀，天然排除按钮）。故 `_detect_urge` 按序扫「子群消息文本 → 建单卡 → 完结卡」，命中即返回。⚠️修复记录：初版 `compute_urgency_signals` 只扫建单/完结卡文本，催单在生产永不触发（子群消息才是真实载体）；2026-10-16 改为经 `_detect_urge` 同扫子群消息，回归补真实子群路径正控 + 建单卡负控。
+
+## 情绪判定门禁（AGENTS.md 规则 Q）
+
+客户负面情绪走「LLM 提议、脚本门禁」，与实质状态（effective_status）完全同构。gate.py `sanitize_sentiment(summary, slice_, texts)` 三重校验：① `sentiment.level ∈ SENTIMENT_ENUM`（枚举单一事实源＝gate.py `SENTIMENT_ENUM = {"无","轻微","明显","无法判定"}`，本节只引用常量名）；② `SENTIMENT_NEEDS_EVIDENCE = {"轻微","明显"}` 两档必须有 `evidence.message_id` 且落在本工单 allowed 集合（`_allowed_ids`，与 sanitize_summary 共用，按工单隔离禁跨工单引用）；③ `evidence.quote` 是所指消息原文归一化子串。任一失败 → level 回退「无法判定」并写 `sentiment_invalid_evidence` 留痕。
+
+- summary 整体缺 `sentiment` 字段（旧总结/流水线未产出）→ level「无法判定」+ `sentiment_missing` 标记，**绝不臆断为「无」**（避免把没评估装成没情绪）；publish `_watermark` 出文档级水印，render `_sentiment_line` 对 sentiment_missing 返回空串不逐单渲染。
+- `_sentiment_line` 渲染：level ∈ {轻微,明显} → `- ⚠️ 情绪信号（{level}）：{reason}：{quote}`（引证校验失败加「（引证校验失败回退）」）；level=无法判定且非 sentiment_missing → `- ⚠️ 情绪信号：无法判定（子群不可读或引证校验失败，无法评估）`；level=无 → 不渲染。
+- few-shot 见「总结子代理契约 few-shot 样例」下的 sentiment 样例（含明显负面例与客气用语反例）。
+
+## 工单连续性（存活天数 / 跨天 join / 僵单）
+
+工单连续性追踪回答「这张单开了多久、是否跨天未结、是否僵住」，是关注等级的确定性信号来源（AGENTS.md 规则 R）。
+
+- **存活天数算法**：`_ticket_open_date(tid, created_at)` 建单日 date——优先用 tid 前缀 `E26MMDD` 解码（如 `E261013EN4RBWM` → 2026-10-13），比 `created_at` 可靠（完结日 collect 的 `created_at` 为空），解码失败回退 `created_at` 日期部分，都拿不到返回 None。`_days_span(tid, created_at, completed_at, today)` = 完结日（有）或 today（无）− 建单日，建单日无法解析返回 0。
+- **锚点保补跑可复现**：collect `_merged_signals` 传给 `compute_urgency_signals` 的 `today`（work_day）取 `transcripts["date"]`（**工单日**）而非跑批当日——补跑老日期时存活天数按工单日锚定，同一工单日多次跑批结果一致。
+- **跨天单按 tid join**：同一 tid 会在多天的 collect 里出现（前一日建单、当日窗口内完结，或持续未结）。跨天对账靠 tid 作稳定主键——`followup_section`（前日建单当日完结跟进）与 `_carryover_data`（零工单结转 D0 未完结单）都按 tid 在 prev_collects 里 join，不依赖 created_at（该字段在完结日 collect 可能为空）。
+- **僵单判定只对可读子群生效**：`_is_stalled(span, completed_at, last_active, readable, today)` 仅当子群可读（`readable`）且未完结且最近活动距今 >24h（或存活≥2 天但无任何子群消息活动）才判疑似僵单；**子群不可读的降级单一律不判僵单**——用户 2026-10-16 明确「合思那种未自动入群的降级单先不看，别把配置问题当业务问题预警」，避免把入群配置缺失误报成业务停滞。`last_active` 由 `_last_active(sub_messages, completed_at)` 取子群消息 createTime 最大值、无则回退 completed_at。
 
 ## subgroup_policy 语义
 
@@ -103,11 +143,30 @@ workspace `nb9XJrQQ3D0RPXyA`（个人空间 mine space）。树：`2025`(真 fol
   ],
   "solution": "根据连接地址中的实例ID到控制台定位对应实例查询类型与规格：rm-2ze9kictsgpfiu7bt 为 RDS MySQL 高可用实例（mysql.n4.xlarge.2c，8核32GB）；pc-2ze285905v39np1f8 为 PolarDB MySQL 实例（polar.mysql.g4.4xlarge，32核128GB），含一个只读节点；amv-2zevyxl9b47km8f4 为 ADB Serverless 集群（资源组计算最大 64ACU、用户默认计算最大 48ACU、计算预留 48ACU，6 个 8ACU 节点）。页面配置差异的原因是三个连接地址分属不同云产品，无法直接从 URL 解析，需按实例ID在控制台查询。",
   "effective_status": "已完结",
-  "effective_evidence": {"message_id": "msgkmS2FOt0Mk422JJGAZ5uCg==", "quote": "企业工单已完结"}
+  "effective_evidence": {"message_id": "msgkmS2FOt0Mk422JJGAZ5uCg==", "quote": "企业工单已完结"},
+  "sentiment": {"level": "无", "evidence": {}, "reason": "客户全程配合、以“没有了，多谢”确认结单，无负面情绪"}
 }
 ```
 
-溯源要求：summary JSON 之外，子代理须在汇报里列支撑句的 messageId/时间戳（problem 2 条、process 逐 bullet、solution 指向工程师总结与完结卡）。
+溯源要求：summary JSON 之外，子代理须在汇报里列支撑句的 messageId/时间戳（problem 2 条、process 逐 bullet、solution 指向工程师总结与完结卡）。`sentiment.level` 取「轻微/明显」时 `evidence.message_id`+`quote` 必填且须落在本工单 allowed 集合（AGENTS.md 规则 Q）；取「无」不需引证。
+
+### sentiment few-shot：明显负面情绪（2026-10-13 真实工单 E2610134H5HYPU「pai 任务一直处于创建阶段」，海底捞子群可读）
+
+客户跨天（10-13 建单、10-14 仍在追问）未获满意答复，出现无脏词但明确的不认同/受阻表达。这类「应无关键词的质疑」正是纯正则会漏、须由 subagent 判情绪的典型（AGENTS.md 规则 Q）。仅列 sentiment 相关字段：
+
+```json
+{
+  "sentiment": {
+    "level": "明显",
+    "evidence": {"message_id": "msgT0zsncePnFygpE2g2qFYdw==", "quote": "应该不是这个原因"},
+    "reason": "客户跨天多次追问仍未定位真因，明确否定工程师给的排查方向（“应该不是这个原因”），并强调“这个是线上任务，不能随意重启”表达对处置方案受阻的不满。"
+  }
+}
+```
+
+- `quote`「应该不是这个原因」是 messageId `msgT0zsncePnFygpE2g2qFYdw==`（2026-10-14 16:09:42 客户发言）原文归一化子串，`sanitize_sentiment` 校验通过。
+- 该单同时命中「未完结 + 明显负面」→ compute_attention 升 🔴重点；若引证 message_id 不在本工单 allowed 集合或 quote 非原文子串，`sanitize_sentiment` 回退 level「无法判定」并写 `sentiment_invalid_evidence`，`_sentiment_line` 渲染时加「（引证校验失败回退）」。
+- 反例（不可这样写）：把「好的，谢谢[捂脸哭]」（E2610143Y5HYZP，客户客气道谢）判为负面——`[捂脸哭]` 是客气表情不是负面信号，纯正则会误伤，须靠 subagent 语义判断。
 
 ### process_bullets 反例：逐条摘录 vs 精简合成（2026-10-15 真实工单 E2610143Y5HYZP）
 

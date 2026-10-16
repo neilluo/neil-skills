@@ -1,6 +1,6 @@
 # AGENTS.md — neil-ticket-skill 工程规范（单一事实源）
 
-沉淀自三轮多模型评审与机械度量：第一轮 GLM-5.3（tests/review-2026-10-14-glm53.md）；第二轮 Ultimate + Kimi-K3（tests/review-2026-10-14-ultimate-a.md / ultimate-b.md / kimi-k3.md）；第三轮 DeepSeek-V4-Pro + Qwen3.8-Max 七项专项（tests/review-2026-10-14-deepseek-v4-pro.md / qwen38-max.md，提示词 tests/review-prompt-v3.md）；机械度量 scripts/analyze-metrics.py。改 scripts/neil_ticket/（含兼容 shim scripts/ticket.py）、templates/、config/、tests/ 前必须通读本文件；本文件与 SKILL.md/reference.md 冲突时以本文件为准。
+沉淀自多轮多模型评审与机械度量：第一轮 GLM-5.3（tests/review-2026-10-14-glm53.md）；第二轮 Ultimate + Kimi-K3（tests/review-2026-10-14-ultimate-a.md / ultimate-b.md / kimi-k3.md）；第三轮 DeepSeek-V4-Pro + Qwen3.8-Max 七项专项（tests/review-2026-10-14-deepseek-v4-pro.md / qwen38-max.md，提示词 tests/review-prompt-v3.md）；第四轮 MiniMax-M3（tests/review-2026-10-15-minimax-m3.md，包结构落地）；第五轮两个不同 focus 的 review subagent 交叉评审（2026-10-17，关注等级功能，修复记录见 reference.md「开放项与取舍记录·第五轮」）；机械度量 scripts/analyze-metrics.py。改 scripts/neil_ticket/（含兼容 shim scripts/ticket.py）、templates/、config/、tests/ 前必须通读本文件；本文件与 SKILL.md/reference.md 冲突时以本文件为准。
 
 ## A. dws 调用一律经 run_dws
 - 所有 dws 调用必须走 scripts/neil_ticket/transport.py 的 `run_dws`（subprocess argv 列表形式，全包唯一 dws 出口）。禁止在 shell 里拼 dws 命令：重定向（`>`）、shell 变量、`for`/`while` 循环、管道包裹一律禁止。
@@ -61,7 +61,8 @@
 - 改日报列：templates/daily-report.md 表头 + render 行格式，两处同批（表头在模板、数据行在代码，一表拆两文件，改一处必改另一处）+ 回归断言。
 - 改门禁/枚举：只改 scripts/neil_ticket/gate.py 常量（EFFECTIVE_ENUM 等）；reference.md 引用代码常量名，文档不复制枚举值。
 - 改零工单口径（含昨日结转）＝ render/publish 结转逻辑（render.carryover_section + render() 的 carryover 参数替换零工单节 + publish._carryover_data 装配）+ SKILL.md 日期口径节 + reference.md「开放项与取舍记录」结转条目，同批落地 + 回归断言（正控/失败分支/负控）。
-- 来源：第三轮 DeepSeek-V4-Pro §4/§5（加客户已验证零代码；模板表头↔render 行隐式耦合；effective_status 枚举存在四处代码外拷贝应下沉）、Qwen3.8-Max §4/§5；第二轮 Ultimate-b（催单能力虚标教训：契约未落地不得写入宣称）；零工单结转（用户 2026-10-15 指令「如果没有工单的话，可以复用一下昨天的」）。
+- 改关注等级硬信号词表/阈值＝parse.py 常量（`SAFETY_KEYWORDS`/`PRODUCTION_KEYWORDS`，及 compute_attention 内的档位阈值如「存活≥2 天」「>24h 无活动」）+ reference.md「硬信号风险词表」/「关注等级判定」节 + tests/run-regression.py 回归断言，三处同批落地。词表放代码常量便于审计，reference.md 复制其实际值（与门禁枚举「文档只引用常量名不复制值」相反，词表属可审计业务口径须逐字列出），改一处必改其余两处。
+- 来源：第三轮 DeepSeek-V4-Pro §4/§5（加客户已验证零代码；模板表头↔render 行隐式耦合；effective_status 枚举存在四处代码外拷贝应下沉）、Qwen3.8-Max §4/§5；第二轮 Ultimate-b（催单能力虚标教训：契约未落地不得写入宣称）；零工单结转（用户 2026-10-15 指令「如果没有工单的话，可以复用一下昨天的」）；关注等级词表同批（用户 2026-10-16 指令，见规则 R）。
 
 ## M. 评审发现必须回写规范
 - 每轮评审（多模型评审或 analyze-metrics.py 度量）发现的新规律、新陷阱、新契约，必须同批回写本 AGENTS.md 与 reference.md，禁止留「只在评审报告里」的知识；回写条目须标注来源报告。
@@ -80,7 +81,24 @@
 - 来源：第二轮评审执行实测——首次 Ultimate 评审静默早退，tests/review-2026-10-14-ultimate.md 仅一行空输出；改 `--attachment` 注入后重跑才得到 ultimate-a/b 两份完整报告。
 
 ## P. 物理分层与依赖方向
-- scripts/neil_ticket/ 九模块职责一句话清单：config＝路径常量/台账读取/时区/时间窗/--customers 过滤/doc_title 配置消费（依赖链最底层，不 import 包内其他层）；transport＝run_dws 唯一 dws 出口 + RETRY_* 重试预算表 + 130003 结构化判定 + _paginate 通用翻页；parse＝卡片正则与工单结构化 + compute_signals 确定性信号抽取（纯函数，无 I/O）；gate＝EFFECTIVE_ENUM 与 sanitize_summary 三重门禁（纯函数）；render＝模板渲染与转义纯函数 + verification_markers 回读校验标记；collect＝主群窗口读取/子群探读/slice 组装/collect 子命令编排；publish＝幂等建文档/覆盖更新/回读校验/跨天跟进节/publish 子命令编排；cli＝argparse 装配，唯一对外执行入口，不写业务逻辑；__init__＝公共名重导出与 __all__（包公共 API 单一出处）。
-- 依赖方向：config←transport←parse←gate←render←collect/publish←cli，只准向左（下层）依赖，禁止循环依赖；scripts/ticket.py 仅为兼容 shim（星号重导出 + monkeypatch 写入转发），禁止新增业务逻辑。当前实际包内 import：render→{config,gate}；collect→{config,parse,transport}；publish→{config,gate,render,transport}；cli→{collect,publish}；config/transport/parse/gate 包内零依赖。
+- scripts/neil_ticket/ 九模块职责一句话清单：config＝路径常量/台账读取/时区/时间窗/--customers 过滤/doc_title 配置消费（依赖链最底层，不 import 包内其他层）；transport＝run_dws 唯一 dws 出口 + RETRY_* 重试预算表 + 130003 结构化判定 + _paginate 通用翻页；parse＝卡片正则与工单结构化 + compute_signals 确定性信号抽取 + compute_urgency_signals/compute_attention 关注等级确定性信号与三档合成（纯函数，无 I/O）；gate＝EFFECTIVE_ENUM/SENTIMENT_ENUM 与 sanitize_summary/sanitize_sentiment 三重门禁 + _evidence_bad 共用引证校验（纯函数）；render＝模板渲染与转义纯函数 + verification_markers 回读校验标记 + 关注等级注入（_attention_map/_attention_section 经 compute_attention）；collect＝主群窗口读取/子群探读/slice 组装/collect 子命令编排；publish＝幂等建文档/覆盖更新/回读校验/跨天跟进节/结转 re-age（_reage_urgency）/publish 子命令编排；cli＝argparse 装配，唯一对外执行入口，不写业务逻辑；__init__＝公共名重导出与 __all__（包公共 API 单一出处）。
+- 依赖方向：config←transport←parse←gate←render←collect/publish←cli，只准向左（下层）依赖，禁止循环依赖；scripts/ticket.py 仅为兼容 shim（星号重导出 + monkeypatch 写入转发），禁止新增业务逻辑。当前实际包内 import：render→{config,gate,parse}（parse 的 compute_attention 供关注等级合成，向左合规）；collect→{config,parse,transport}；publish→{config,gate,parse,render,transport}（parse 的 _days_span/_is_stalled/词表供结转 re-age，向左合规）；cli→{collect,publish}；config/transport/parse/gate 包内零依赖。
 - 扩展契约：加客户＝仅改 config/customers.json，代码零改动；加卡片事件类型＝parse 分支 + templates/daily-report.md + tests/fixtures 回归断言 + reference.md「工单事件报文解剖」节，四处同批（与规则 L 一致）；加输出目标＝仅 publish 层新增 target 函数 + cli 接线，其余层不动；换传输通道（dws 替代）＝仅改 transport 层。
 - 来源：用户 2026-10-15 批评「单文件谈不上扩展」（第四轮包结构落地触发点）；第三轮 Qwen3.8-Max §4（六层可辨但边界渗漏：run_dws 内嵌 130003 门禁、probe_subgroup 采集里做解析投影、render 反依赖门禁与配置、followup_section 归渲染却做磁盘 IO、publish_one 一函数跨发布/门禁/渲染/IO）、DeepSeek-V4-Pro（新输出目标与 alidocs 强耦合需先拆）。落地态与度量复测（跨模块重复 0.00%、死代码 0、函数 ≤40 行）见 reference.md「开放项与取舍记录·第四轮」。
+
+## Q. 情绪判定门禁（与规则 E 同构）
+- 客户负面情绪走「LLM 提议、脚本门禁」，与规则 E 的 effective_status 完全同构：总结 subagent 提议 `sentiment`，publish 用 gate.py `sanitize_sentiment` 机械校验兜底。三重校验（共用核心抽为 gate.py `_evidence_bad`，sanitize_summary/sanitize_sentiment 共享，避免两套引证校验漂移）：① `sentiment.level ∈ SENTIMENT_ENUM`（枚举单一事实源＝gate.py `SENTIMENT_ENUM`，本文档与 reference.md 均只引用常量名不复制值，规则 L）；② `SENTIMENT_NEEDS_EVIDENCE`（gate.py 常量，即「轻微/明显」两档）必须有 `sentiment.evidence.message_id` 落在本工单 allowed 集合（`_allowed_ids`，与 sanitize_summary 共用，按工单隔离禁跨工单引用）且 `quote` 非空；③ `evidence.quote` 是所指消息原文归一化子串。任一失败 → level 回退「无法判定」并写 `sentiment_invalid_evidence` 留痕（不可静默）。evidence 非 dict（LLM 结构异常）→ 需引证档判失败、宽容档放行，`_evidence_bad` 不崩溃于畸形结构（第五轮评审 P1：原实现 `ev.get` 会 AttributeError）。空 quote + 真实 message_id 曾可绕过子串校验（第五轮 P1），现由 `_evidence_bad` 的 `<空quote>` 分支拦截。
+- **绝不把「没评估」臆断成「没情绪」**：summary 整体缺 `sentiment` 字段（旧总结/流水线未产出）→ level 置「无法判定」+ `sentiment_missing` 标记，由 publish `_watermark` 出文档级水印「本篇未产出情绪判定（sentiment 缺失），关注等级仅按确定性信号合成，负面情绪可能漏标」，而非逐单渲染成「无」。render `_sentiment_line` 对 `sentiment_missing` 返回空串（避免逐单噪声），仅对 LLM 显式判定的「轻微/明显/无法判定」渲染引证行。
+- **情绪与人名脱敏为何都停在「LLM 提议+脚本门禁」而非纯正则**：纯正则无法可靠区分语义——实测会误伤友好用语（如「好的谢谢[捂脸哭]」的 `[捂脸哭]` 是客气表情不是负面），也会漏掉无负面词的质疑（如「应该不是这个原因」「这个是线上任务，不能随意重启」——无脏词但表达不认同/受阻）。故情绪由 subagent 依契约判、脚本只校验引证真实性（防编造），语义判断本身不做机械保证，与人名脱敏停在契约层（规则 N）同一取舍逻辑。
+- 来源：用户 2026-10-16 指令（负面情绪要标红、走 LLM+门禁）；研究 subagent 2026-10-16 于三天真实 transcripts 实测纯正则误伤/漏判（E2610143Y5HYZP「好的，谢谢[捂脸哭]」误伤、E2610134H5HYPU「应该不是这个原因」漏判）；设计取舍记录见 reference.md「开放项与取舍记录」。
+
+## R. 关注等级合成契约（🔴重点/🟡留意/⚪常规）
+- 三档由 parse.py `compute_attention(ticket, urgency, sentiment_level)` 纯函数合成，返回 `(emoji, level_name, [触发原因])`。两类输入分工明确：**确定性信号由脚本算**（`compute_urgency_signals`，无 I/O 纯函数，collect 阶段写入 `slice.signals[tid].urgency`），**情绪由 LLM 提议**（`sentiment.level`，经规则 Q 门禁校验后传入）。合成规则（任一命中即升该档，红优先于黄）：
+  - 🔴重点：催单事件 `urge_reason` 非空 ｜ 安全类标题命中 `safety_hit` ｜ 未完结且「明显」负面 ｜「明显」负面情绪。
+  - 🟡留意：跨天未完结（`days_span≥2` 且未完结）｜ 跨天已完结（`days_span≥2` 且 `completed`，关注服务时效；用户规则 a 只把当天完结算常规）｜「轻微」负面 ｜ 生产故障标题命中 `production_hit` ｜ 疑似僵单 `stalled`。
+  - ⚪常规：其余（当天完结普通问答／建单无应答但子群不可读）。
+- **硬信号词表放代码常量**：`SAFETY_KEYWORDS`（安全类标题，命中升🔴）与 `PRODUCTION_KEYWORDS`（生产故障类标题，命中升🟡）定义在 parse.py 顶部常量，便于统一审计；改词表/阈值按规则 L 三处同批（parse.py 常量 + reference.md 词表/判定节 + 回归断言）。催单信号由 `_detect_urge` 探测：真实催单事件是**子群里「阿里云服务台」发的独立机器人消息**（正文含「催单信息：<font >业务阻塞</font>」），**不在建单/完结卡里**——建单卡 Tips 的「催单」只是每张卡都有的按钮跳转链接（`RE_URGE` 只匹配「催单信息：」前缀，天然排除按钮，命中按钮会造成全量假升级）。故 `_detect_urge` 按序扫「子群消息文本 → 建单卡 → 完结卡」。⚠️修复记录（2026-10-16）：初版 `compute_urgency_signals` 只扫建单/完结卡文本，催单在生产永不触发；改为经 `_detect_urge` 同扫子群消息，回归补真实子群路径正控 + 建单卡按钮负控。实测样本见 reference.md「硬信号风险词表」节。
+- **僵单判定只对可读子群生效**：`_is_stalled` 仅当子群可读（`readable`）且未完结且最近活动距今 >24h（或存活≥2 天但无任何子群消息活动）才判疑似僵单；子群不可读的降级单一律不判僵单——用户 2026-10-16 明确「合思那种未自动入群的降级单先不看，别把配置问题当业务问题预警」，避免把入群配置缺失误报成业务停滞。
+- **存活天数以工单日锚点保补跑可复现**：`_ticket_open_date` 优先用 tid 前缀 `E26MMDD` 解码建单日（比 `created_at` 可靠——完结日 collect 的 `created_at` 为空），失败回退 `created_at` 日期部分；`_days_span` = 完结日或 today − 建单日。collect `_merged_signals` 传入的 `today`（work_day）取 `transcripts["date"]`（工单日）而非跑批当日，使补跑老日期时存活天数按工单日锚定、结果可复现。
+- 分层：确定性信号抽取在 parse（纯函数），情绪门禁在 gate（规则 Q），合成 `_attention_map` 与「零、重点关注」节渲染在 render（`_attention_section` 只列🔴🟡、红前黄后），信号合并入 slice 在 collect（`_merged_signals`），水印在 publish（`_watermark`）——符合规则 P 依赖方向。
+- 来源：用户 2026-10-16 指令（工单连续性要重点关注跨天单、负面情绪要标红、催单/安全/生产硬信号升级、子群不可读的降级单不做僵单判定）；实测催单卡样式「催单信息：<font >业务阻塞</font>」见 outputs/transcripts-2026-10-13-haidilao.json 工单 E2610134H5HZYU（`RE_URGE` 抽取「业务阻塞」验证通过）。三档判定表与词表实际值见 reference.md「关注等级判定」「硬信号风险词表」「工单连续性」节。

@@ -384,28 +384,28 @@ def main():
         # A) 正控：D0 有未完结工单 → 结转节含「结转自」/tid/D0 日期，旧零工单文案被替换
         _wj(p_summary, sum_ok)
         carry = T._carryover_data("haidilao", T._load_prev_collects(cur_a, days=7), "+08:00")
-        assert carry, "应产生结转节"
+        assert isinstance(carry, tuple) and carry[0], "应产生结转节 (md, rows) 二元组"
         md_c = T.render(customer, cur_a, empty_slice, {}, carryover=carry)
         assert "三、零工单说明与昨日结转" in md_c, md_c[:400]
         assert "结转自" in md_c and ctid in md_c and d0 in md_c, md_c[:400]
         assert "当日无新工单" in md_c and "窗口内无新工单" in md_c
         assert "窗口内无工单事件（无建单/完结卡片" not in md_c, "旧零工单文案未被结转节替换"
         assert "{{" not in md_c
-        # 概览表保持零行占位（结转工单不入概览表，避免与「当日事件」口径混淆）
-        assert "| — | — | — | — | — | — | — |" in md_c
+        # 概览表保持 9 列零行占位（结转工单不入当日概览表，避免与「当日事件」口径混淆）
+        assert "| — | — | — | — | — | — | — | — | — |" in md_c, md_c
         # 需求4：effective_status 复用 D0 summary 且经 D0 slice 校验通过 → 保留、无回退留痕
         assert "引证校验失败回退规则" not in md_c
         assert "实质状态：处理中" in md_c and "子群原文片段" in md_c
 
         # A2) 需求4 失败分支：D0 summary 引证非法 → 回退规则值并留痕（复用既有门禁）
         _wj(p_summary, sum_bad)
-        carry_fb = T._carryover_data("haidilao", T._load_prev_collects(cur_a, days=7), "+08:00")
-        assert "引证校验失败回退规则" in carry_fb, carry_fb[:400]
-        assert "已解决待关单" not in carry_fb
+        carry_fb_md = T._carryover_data("haidilao", T._load_prev_collects(cur_a, days=7), "+08:00")[0]
+        assert "引证校验失败回退规则" in carry_fb_md, carry_fb_md[:400]
+        assert "已解决待关单" not in carry_fb_md
 
         # B) 负控：最近日 D0 全完结 → 纯零工单说明，不结转、不再回看更早日
         carry2 = T._carryover_data("haidilao", T._load_prev_collects(cur_b, days=7), "+08:00")
-        assert carry2 == "", carry2
+        assert carry2 == ("", []), carry2
         md_z = T.render(customer, cur_b, empty_slice, {}, carryover=carry2)
         assert "窗口内无工单事件（无建单/完结卡片" in md_z
         assert "结转自" not in md_z and "三、零工单说明与昨日结转" not in md_z
@@ -413,6 +413,66 @@ def main():
         for p in tmp_paths:
             if os.path.exists(p):
                 os.unlink(p)
+
+    # ---- publish._reage_urgency（结转单按报告日重新锚定，2026-10-16 修复）----
+    # D0 slice 的 urgency 锚在 D0；结转单在报告日仍未完结，须重算 days_span/stalled
+    # 并按 title 重算 safety/production_hit（D0 可能是无 urgency 的旧格式 collect）。
+    pslice_re = {
+        "ticket_order": ["TRE"],
+        "tickets": {"TRE": {"tid": "E261013TRE", "title": "es不可用导致生产环境异常",
+                            "status": "处理中", "creator": "熊高鹏", "xiaoer": "王震",
+                            "created_at": "2026-10-13 14:59:47", "completed_at": "",
+                            "subgroup_cid": "", "create_msg_id": "", "done_msg_id": "",
+                            "desc_card": "", "sol_card": "", "subgroup_msg_ids": [],
+                            "subgroup_msg_times": {}}},
+        "signals": {"TRE": {}},  # 旧格式：无 urgency
+        "subgroup_readable": {"TRE": False},
+        "probe_errors": {"TRE": "未入群"},
+    }
+    reaged = T._reage_urgency(pslice_re, ["TRE"], "2026-10-15")
+    urg = reaged["signals"]["TRE"]["urgency"]
+    assert urg["days_span"] == 2, urg          # 10-13 → 10-15
+    assert urg["completed"] is False, urg
+    assert urg["production_hit"] != "", urg     # 标题「生产/不可用/异常」命中，重算而非信旧值
+    assert pslice_re["signals"]["TRE"] == {}, "不得原地改动入参 pslice"
+    # re-aged 后 compute_attention 应升 🟡（跨天未完结 + 生产故障标题），不再是 ⚪
+    e_re, lv_re, _ = T.compute_attention(pslice_re["tickets"]["TRE"], urg, "无法判定")
+    assert (e_re, lv_re) == ("🟡", "留意"), (e_re, lv_re)
+    # 第五轮评审 P2-6：复用 D0 非空 last_active（子群可读）→ 按报告日重算 stalled
+    pslice_la = {**pslice_re,
+                 "tickets": {"TRE": {**pslice_re["tickets"]["TRE"], "title": "普通咨询"}},
+                 "signals": {"TRE": {"urgency": {"last_active": "2026-10-13 10:00:00",
+                                                 "readable": True}}},
+                 "subgroup_readable": {"TRE": True}}
+    urg_la = T._reage_urgency(pslice_la, ["TRE"], "2026-10-15")["signals"]["TRE"]["urgency"]
+    assert urg_la["last_active"] == "2026-10-13 10:00:00", urg_la  # 复用 D0 原值
+    assert urg_la["stalled"] is True, urg_la   # 报告日 10-15 距最后活动 >24h → 僵单
+    # 第五轮评审 P2-5：report_date 畸形 → 原样返回 pslice，不崩溃
+    assert T._reage_urgency(pslice_re, ["TRE"], "不是日期") is pslice_re
+
+    # 集成：_carryover_data 带 report_date → 结转单 re-age 后升 🟡，(md, rows) 的 rows
+    # 非空，供 render 顶部「零、重点关注」合并（修复顶部漏列结转跨天单的口径不一致）。
+    # 用不与既有产物碰撞的丢弃日期（D0=10-27、报告日=10-29，跨度 2 天），finally 清理。
+    d0_re, rep_re = "2026-10-27", "2026-10-29"
+    p_col_re = os.path.join(T.OUT_DIR, f"collect-{d0_re}.json")
+    p_tr_re = os.path.join(T.OUT_DIR, f"transcripts-{d0_re}-hesi.json")
+    _wj(p_col_re, {"date": d0_re, "customers": {"hesi": pslice_re}, "errors": {}})
+    _wj(p_tr_re, {"customer_key": "hesi", "date": d0_re, "tickets": {}})
+    try:
+        carry_md, carry_rows = T._carryover_data(
+            "hesi", T._load_prev_collects(rep_re, days=7), "+08:00", report_date=rep_re)
+        assert carry_rows and carry_rows[0][0] == "🟡", carry_rows
+        assert "🟡" in carry_md, carry_md[:200]
+        # 顶部合并渲染：结转 🟡 出现在「零、重点关注」节
+        md_top = T.render({"name": "合思", "service_group_name": "g"}, rep_re,
+                          empty_slice, {}, carryover=(carry_md, carry_rows))
+        top_sec = md_top.split("## 一、概览")[0]
+        assert "TRE" in top_sec and "🟡" in top_sec, top_sec
+        assert "今日无重点关注工单" not in top_sec, "结转跨天单未进顶部重点关注节"
+    finally:
+        for fp in [p_col_re, p_tr_re]:
+            if os.path.exists(fp):
+                os.unlink(fp)
 
     # 自动入群告警日期门：补跑老日期不告警（入群配置不追溯历史子群），昨日跑批仍告警
     from neil_ticket import collect as C
@@ -471,6 +531,309 @@ def main():
         T.cmd_publish(_ap.Namespace(date="2099-01-01", customers=None, force=False))
     finally:
         os.unlink(gate_marker)
+
+    # =====================================================================
+    # 新功能：工单连续性 + 负面情绪 + 关注等级三档（AGENTS.md 规则 Q/R）
+    # =====================================================================
+    from datetime import date as _date
+
+    # ---- parse.compute_urgency_signals（today 传 date 对象；纯事实抽取）----
+    # 催单命中路径①（子群独立机器人消息，真实生产路径）：催单事件是「阿里云服务台」在
+    # 子群发的独立消息，正文含「催单信息：<font >业务阻塞</font>」，不在建单卡里。
+    # 这是 2026-10-16 修复的真 bug（原来只扫 create/done_card_text，催单永不触发）。
+    tk_u = {"tid": "E2610143Y5HYZP", "title": "数据库查询突然变慢超时",
+            "created_at": "", "completed_at": "2026-10-15 09:52:10"}
+    sub_urge = [{"messageId": "mU1", "createTime": "2026-10-15 09:00:00",
+                 "text": "#### 您好，钉群服务已经收到您的催单。\n ****** \n "
+                         ">###### 催单信息：<font >业务阻塞</font> \n >###### 企业工单ID：E2610143Y5HYZP"}]
+    sig_urge_sub = T.compute_urgency_signals(tk_u, sub_urge, _date(2026, 10, 15))
+    assert sig_urge_sub["urge_reason"] == "业务阻塞", sig_urge_sub
+    assert T._detect_urge(sub_urge, "", "") == "业务阻塞"
+    # 催单命中路径②（建单/完结卡文本，向后兼容）：create_card_text 含「催单信息：」→ urge_reason
+    card_urge = " ****** \n >###### 催单信息：<font color=#F00>业务阻塞</font> \n >###### 企业工单ID：E2610143Y5HYZP"
+    sig_urge = T.compute_urgency_signals(tk_u, [], _date(2026, 10, 15),
+                                         create_card_text=card_urge)
+    assert sig_urge["urge_reason"] == "业务阻塞", sig_urge
+    # 负控（防误报）：普通建单卡 Tips 里有「催单」按钮链接但无「催单信息：」→ urge_reason 为空
+    card_plain = ("已为您创建新企业工单 企业工单标题：<font color=#096DD9>x</font> "
+                  "企业工单ID：E2610143Y5HYZP Tips：可以点击[催单]"
+                  "(dingtalk://dingtalkclient/page/link?url=task%2Furge%3Ftid%3D1)为您加急处理。")
+    sig_plain = T.compute_urgency_signals(tk_u, [], _date(2026, 10, 15),
+                                          create_card_text=card_plain)
+    assert sig_plain["urge_reason"] == "", sig_plain
+    # 负控：子群普通消息（含「催单」二字但非「催单信息：」事件）不误报
+    assert T._detect_urge([{"text": "您可以点击催单按钮加急"}], "", "") == ""
+    # 安全词 / 生产词命中（标题词表）
+    assert T.compute_urgency_signals({"tid": "T", "title": "waf注入漏洞"}, [],
+                                     _date(2026, 10, 16))["safety_hit"] != ""
+    assert T.compute_urgency_signals({"tid": "T", "title": "es不可用导致生产环境异常"}, [],
+                                     _date(2026, 10, 16))["production_hit"] != ""
+    # 存活天数：created_at 为空时靠 tid 前缀 E26MMDD 仍能算跨度
+    # E26 10 14 → date(2026,10,14)；completed_at 2026-10-15 → span==1
+    assert sig_urge["days_span"] == 1, sig_urge
+    assert T._ticket_open_date("E2610143Y5HYZP", "") == _date(2026, 10, 14)
+    # 僵单三分支
+    # a) 子群可读 + 未完结 + 最近活动距今 >24h → stalled True
+    tk_st = {"tid": "E2610143Y5HYZP", "created_at": "", "completed_at": ""}
+    sig_st = T.compute_urgency_signals(
+        tk_st, [{"createTime": "2026-10-14 10:00:00", "messageId": "m1"}],
+        _date(2026, 10, 16))
+    assert sig_st["readable"] is True and sig_st["stalled"] is True, sig_st
+    # b) 子群不可读（readable=False 且 sub_messages 空）+ 未完结 → stalled False（降级单不判僵单）
+    sig_nost = T.compute_urgency_signals(
+        {**tk_st, "subgroup_readable": False}, [], _date(2026, 10, 16))
+    assert sig_nost["readable"] is False and sig_nost["stalled"] is False, sig_nost
+    # c) 已完结 → stalled False
+    sig_done = T.compute_urgency_signals(
+        {"tid": "E2610143Y5HYZP", "created_at": "", "completed_at": "2026-10-16 09:00:00"},
+        [{"createTime": "2026-10-14 10:00:00", "messageId": "m1"}], _date(2026, 10, 16))
+    assert sig_done["completed"] is True and sig_done["stalled"] is False, sig_done
+    assert T._is_stalled(2, "", "", False, _date(2026, 10, 16)) is False, "不可读降级单不应判僵单"
+
+    # ---- parse.compute_attention → (emoji, level_name, reasons) 三档 ----
+    # 🔴重点
+    e, lv, rs = T.compute_attention({}, {"urge_reason": "业务阻塞"}, "无")
+    assert (e, lv) == ("🔴", "重点") and any("催单" in r for r in rs), (e, lv, rs)
+    e, lv, _ = T.compute_attention({}, {"safety_hit": "漏洞"}, "无")
+    assert (e, lv) == ("🔴", "重点"), (e, lv)
+    e, lv, rs = T.compute_attention({}, {"completed": False, "days_span": 1}, "明显")
+    assert (e, lv) == ("🔴", "重点") and any("未完结且客户明显负面情绪" in r for r in rs), (e, lv, rs)
+    # span=0 当天建单未完结 + 明显负面：措辞不得谎称「跨天」（第五轮评审 P2-3）
+    e, lv, rs = T.compute_attention({}, {"completed": False, "days_span": 0}, "明显")
+    assert (e, lv) == ("🔴", "重点") and any("未完结" in r for r in rs) and not any("跨天" in r for r in rs), (e, lv, rs)
+    e, lv, rs = T.compute_attention({}, {"completed": True}, "明显")
+    assert (e, lv) == ("🔴", "重点") and any("明显负面情绪" in r for r in rs), (e, lv, rs)
+    # 🟡留意
+    e, lv, rs = T.compute_attention({}, {"completed": False, "days_span": 2}, "无")
+    assert e == "🟡" and lv == "留意" and any("存活 2 天" in r for r in rs), (e, lv, rs)
+    e, lv, _ = T.compute_attention({}, {}, "轻微")
+    assert e == "🟡", (e, lv)
+    e, lv, _ = T.compute_attention({}, {"production_hit": "生产"}, "无")
+    assert e == "🟡", (e, lv)
+    e, lv, _ = T.compute_attention({}, {"stalled": True}, "无")
+    assert e == "🟡", (e, lv)
+    # 跨天已完结（耗时≥2天）→ 🟡留意（关注服务时效，用户规则 a：仅当天完结算常规）
+    e, lv, rs = T.compute_attention({}, {"completed": True, "days_span": 2}, "无")
+    assert (e, lv) == ("🟡", "留意") and any("跨天已完结" in r for r in rs), (e, lv, rs)
+    # ⚪常规：已完结 + 当天(span=0) + sentiment 无
+    e, lv, rs = T.compute_attention({}, {"completed": True, "days_span": 0}, "无")
+    assert (e, lv) == ("⚪", "常规") and rs == ["当天完结普通问答"], (e, lv, rs)
+    # 优先级：同时满足🔴（催单）和🟡（跨天未完结）→ 🔴 重点
+    e, lv, rs = T.compute_attention({}, {"urge_reason": "业务阻塞", "completed": False,
+                                         "days_span": 3}, "无")
+    assert (e, lv) == ("🔴", "重点") and any("催单" in r for r in rs), (e, lv, rs)
+
+    # ---- gate.sanitize_sentiment（与 sanitize_summary 同构，规则 Q）----
+    assert T.SENTIMENT_ENUM == {"无", "轻微", "明显", "无法判定"}, T.SENTIMENT_ENUM
+    assert T.SENTIMENT_NEEDS_EVIDENCE == {"轻微", "明显"}, T.SENTIMENT_NEEDS_EVIDENCE
+    assert T._allowed_ids({"create_msg_id": "c1", "done_msg_id": "",
+                           "subgroup_msg_ids": ["s1", "s2"]}) == {"c1", "s1", "s2"}
+    sl_slice = {"tickets": {"TS": {"create_msg_id": "msgC==", "done_msg_id": "",
+                                   "subgroup_msg_ids": ["msgS==", "msgX=="]}}}
+    sl_texts = {"TS": {"msgS==": "这个方案根本不行，太让人失望了", "msgX==": "好的收到"}}
+    # 正控：level=明显 + 合法引证（message_id 在本工单、quote 是原文子串）→ 保留、无留痕
+    good_sent = {"TS": {"sentiment": {"level": "明显",
+                                      "evidence": {"message_id": "msgS==", "quote": "根本不行"},
+                                      "reason": "客户明确表达不满"}}}
+    g_out = T.sanitize_sentiment(good_sent, sl_slice, sl_texts)
+    assert g_out["TS"]["sentiment"]["level"] == "明显", g_out
+    assert "sentiment_invalid_evidence" not in g_out["TS"], g_out
+    # 负控：伪造 quote（非原文子串）→ 回退无法判定 + 留痕该 message_id
+    fake_q = {"TS": {"sentiment": {"level": "明显",
+                                   "evidence": {"message_id": "msgS==", "quote": "客户承诺加钱"},
+                                   "reason": "编造"}}}
+    fq_out = T.sanitize_sentiment(fake_q, sl_slice, sl_texts)
+    assert fq_out["TS"]["sentiment"]["level"] == "无法判定", fq_out
+    assert fq_out["TS"]["sentiment_invalid_evidence"] == "msgS==", fq_out
+    # 负控：缺引证（level=轻微 但 evidence={}）→ 回退 + <缺引证>
+    no_ev = {"TS": {"sentiment": {"level": "轻微", "evidence": {}, "reason": "r"}}}
+    ne_out = T.sanitize_sentiment(no_ev, sl_slice, sl_texts)
+    assert ne_out["TS"]["sentiment"]["level"] == "无法判定", ne_out
+    assert ne_out["TS"]["sentiment_invalid_evidence"] == "<缺引证>", ne_out
+    # 负控：跨工单（message_id 不在本工单 allowed）→ 回退 + 留痕
+    cross = {"TS": {"sentiment": {"level": "明显",
+                                  "evidence": {"message_id": "msgOTHER==", "quote": "q"},
+                                  "reason": "r"}}}
+    cr_out = T.sanitize_sentiment(cross, sl_slice, sl_texts)
+    assert cr_out["TS"]["sentiment"]["level"] == "无法判定", cr_out
+    assert cr_out["TS"]["sentiment_invalid_evidence"] == "msgOTHER==", cr_out
+    # 负控：枚举外 level → 回退无法判定
+    rogue_lv = {"TS": {"sentiment": {"level": "气死了",
+                                     "evidence": {"message_id": "msgS==", "quote": "根本不行"},
+                                     "reason": "r"}}}
+    rl_out = T.sanitize_sentiment(rogue_lv, sl_slice, sl_texts)
+    assert rl_out["TS"]["sentiment"]["level"] == "无法判定", rl_out
+    # 缺字段：summary 某工单无 sentiment 键 → level 无法判定 + sentiment_missing
+    miss = {"TS": {"problem": "p"}}
+    ms_out = T.sanitize_sentiment(miss, sl_slice, sl_texts)
+    assert ms_out["TS"]["sentiment"]["level"] == "无法判定", ms_out
+    assert ms_out["TS"].get("sentiment_missing") is True, ms_out
+    # level=无 无引证 → 保留「无」，无留痕（默认安全值不需引证）
+    none_sent = {"TS": {"sentiment": {"level": "无", "evidence": {}, "reason": ""}}}
+    nn_out = T.sanitize_sentiment(none_sent, sl_slice, sl_texts)
+    assert nn_out["TS"]["sentiment"]["level"] == "无", nn_out
+    assert "sentiment_invalid_evidence" not in nn_out["TS"], nn_out
+    # 第五轮评审 P1-1：evidence 非 dict（LLM 结构异常）不得崩溃，需引证档回退留痕
+    bad_ev = {"TS": {"sentiment": {"level": "明显", "evidence": "msgS==", "reason": "r"}}}
+    be_out = T.sanitize_sentiment(bad_ev, sl_slice, sl_texts)
+    assert be_out["TS"]["sentiment"]["level"] == "无法判定", be_out
+    assert be_out["TS"]["sentiment_invalid_evidence"] == "<evidence结构异常>", be_out
+    # 非 dict evidence + 宽容档（无）→ 放行不崩溃
+    bad_ev2 = {"TS": {"sentiment": {"level": "无", "evidence": ["x"], "reason": ""}}}
+    assert T.sanitize_sentiment(bad_ev2, sl_slice, sl_texts)["TS"]["sentiment"]["level"] == "无"
+    # 第五轮评审 P1-2：空 quote + 真实 message_id 不得绕过（规则 E 明令禁止空 quote 绕过）
+    empty_q = {"TS": {"sentiment": {"level": "明显",
+                                    "evidence": {"message_id": "msgS==", "quote": ""},
+                                    "reason": "r"}}}
+    eq_out = T.sanitize_sentiment(empty_q, sl_slice, sl_texts)
+    assert eq_out["TS"]["sentiment"]["level"] == "无法判定", eq_out
+    assert eq_out["TS"]["sentiment_invalid_evidence"] == "<空quote>", eq_out
+    # _evidence_bad 共用核心：sanitize_summary 同源，空 quote 也拦（effective_status 侧）
+    sum_empty_q = {"TS": {"effective_status": "已解决待关单",
+                          "effective_evidence": {"message_id": "msgS==", "quote": ""}}}
+    sl_slice_sig = {"tickets": sl_slice["tickets"], "signals": {"TS": {}},
+                    "subgroup_readable": {"TS": True}}
+    seq_out = T.sanitize_summary(sum_empty_q, sl_slice_sig, sl_texts)
+    assert seq_out["TS"]["effective_status_invalid_evidence"] == "<空quote>", seq_out
+    # 词表逐字 pin（规则 L：改词表须同步回归断言，删词会被此断言拦下）
+    assert T.SAFETY_KEYWORDS == ("漏洞", "注入", "绕过", "泄露", "越权", "攻击", "安全风险", "waf"), T.SAFETY_KEYWORDS
+    assert T.PRODUCTION_KEYWORDS == ("生产", "不可用", "宕机", "故障", "挂了", "影响业务",
+                                     "业务阻塞", "无法访问", "报错", "异常", "中断", "超时"), T.PRODUCTION_KEYWORDS
+    # RE_URGE 兼容半角冒号变体（第五轮评审 P2-7）
+    assert T.RE_URGE.search("催单信息:业务阻塞 ").group(1) == "业务阻塞"
+    assert T.RE_URGE.search("催单信息：<font >业务阻塞</font> ").group(1) == "业务阻塞"
+
+    # ---- render._attention_rows + _attention_section（rows 解耦，支持当日+结转合并）----
+    at_slice = {"ticket_order": ["TY", "TR"],  # 🟡 在前、🔴 在后：验证红前黄后靠 emoji 排序
+                "tickets": {"TY": {"title": "跨天未结单"}, "TR": {"title": "催单业务阻塞"}}}
+    at_map = {"TY": ("🟡", "留意", ["跨天未完结（存活 2 天）"]),
+              "TR": ("🔴", "重点", ["催单事件：业务阻塞"])}
+    at_rows = T._attention_rows(at_slice, at_map)
+    # _attention_rows 只收 🔴/🟡，⚪不入表
+    assert all(r[0] in ("🔴", "🟡") for r in at_rows) and len(at_rows) == 2, at_rows
+    sec = T._attention_section(at_rows)
+    assert "## 零、重点关注" in sec, sec
+    assert sec.index("TR") < sec.index("TY"), "🔴行应在🟡行之前：" + sec
+    assert "催单事件：业务阻塞" in sec and "🔴" in sec and "🟡" in sec, sec
+    # 合并：当日行 + 结转行一起渲染（结转跨多日未完结单也要在顶部列出）
+    carry_rows = [("🔴", "TCARRY", "结转生产故障", "重点", ["催单事件：业务阻塞"])]
+    sec_merge = T._attention_section(at_rows + carry_rows)
+    assert "TCARRY" in sec_merge and "TR" in sec_merge and "TY" in sec_merge, sec_merge
+    # 全⚪ → 今日无重点关注工单
+    all_norm = {"T1": ("⚪", "常规", ["当天完结普通问答"])}
+    sec0 = T._attention_section(T._attention_rows(
+        {"ticket_order": ["T1"], "tickets": {"T1": {"title": "x"}}}, all_norm))
+    assert "今日无重点关注工单" in sec0 and "🔴" not in sec0, sec0
+
+    # ---- render._sentiment_line ----
+    ln = T._sentiment_line({"sentiment": {"level": "明显", "reason": "客户明显不满",
+                                          "evidence": {"quote": "根本不行"}}})
+    assert "⚠️ 情绪信号（明显）" in ln and "根本不行" in ln, ln
+    ln2 = T._sentiment_line({"sentiment": {"level": "无法判定", "reason": "", "evidence": {}}})
+    assert "无法判定" in ln2, ln2
+    # 第五轮评审 P1-2：引证校验失败回退必须可观测（与 effective_status 对齐，非虚标死码）
+    ln_inv = T._sentiment_line({"sentiment": {"level": "无法判定", "evidence": {}},
+                                "sentiment_invalid_evidence": "msgFAKE=="})
+    assert "引证校验失败回退" in ln_inv and "msgFAKE==" in ln_inv, ln_inv
+    # 无留痕的无法判定 → 通用文案，不含「引证校验失败」
+    assert "引证校验失败回退" not in ln2, ln2
+    # evidence 非 dict 不崩溃
+    assert "无法判定" in T._sentiment_line({"sentiment": {"level": "无法判定", "evidence": "x"}})
+    assert T._sentiment_line({"sentiment_missing": True,
+                              "sentiment": {"level": "无法判定"}}) == ""
+    assert T._sentiment_line({"sentiment": {"level": "无"}}) == ""
+
+    # ---- render._overview_row（新签名带 span/emoji；9 列）----
+    row_t = {"title": "标题", "status": "处理中", "creator": "甲", "xiaoer": "乙"}
+    row = T._overview_row("TR", row_t, "处理中", True, "", 2, "🔴")
+    assert "2天" in row and "🔴" in row, row
+    assert row.count("|") == 10, f"概览行应为 9 列（10 个 |）：{row}"
+
+    # ---- render 端到端（含 signals[tid].urgency + summary.sentiment）----
+    e2e_tid = "E2610143Y5HYZP"
+    e2e_t = {**T._blank_ticket(e2e_tid), "title": "数据库查询突然变慢超时",
+             "status": "处理中", "creator": "张腾龙", "xiaoer": "楚成龙",
+             "created_at": "2026-10-14 09:12:33",
+             "subgroup_msg_ids": ["msgS=="], "subgroup_msg_times": {}}
+    e2e_slice = {"ticket_order": [e2e_tid], "tickets": {e2e_tid: e2e_t},
+                 "subgroup_readable": {e2e_tid: True},
+                 "probe_errors": {e2e_tid: ""},
+                 "signals": {e2e_tid: {"urgency": {"days_span": 2, "completed": False,
+                                                   "urge_reason": "业务阻塞",
+                                                   "safety_hit": "", "production_hit": "",
+                                                   "readable": True, "stalled": False,
+                                                   "last_active": ""}}}}
+    e2e_sum = {e2e_tid: {"problem": "p", "process_bullets": ["定位慢查询"], "solution": "s",
+                         "effective_status": "处理中",
+                         "effective_evidence": {"message_id": "msgS==", "quote": "q"},
+                         "sentiment": {"level": "明显", "reason": "客户催促不满",
+                                       "evidence": {"message_id": "msgS==", "quote": "太慢"}}}}
+    md_e = T.render(customer, "2026-10-16", e2e_slice, e2e_sum)
+    assert "零、重点关注" in md_e, md_e[:400]
+    assert "🔴" in md_e and "存活" in md_e and "关注" in md_e, md_e[:600]
+    assert "⚠️ 情绪信号（明显）" in md_e, md_e
+    assert "{{" not in md_e, "模板占位符未替换"
+
+    # ---- collect._merged_signals（合并 compute_signals + compute_urgency_signals）----
+    m_ticket = {"tid": "E2610164MG01", "title": "扩容", "xiaoer": "史月函",
+                "created_at": "2026-10-16 09:00:00", "completed_at": "",
+                "create_card_text": "建单卡", "done_card_text": ""}
+    m_submsgs = [
+        {"messageId": "mS==", "sender": "史月函", "createTime": "2026-10-16 10:00:00",
+         "text": "工单总结如下 【问题描述】SLS project 配额达到上限 150，客户请求扩容以支撑新业务写入。 【解决方案】1、确认 UID 信息后，后台调整 SLS project 配额上限至 300；2、客户验证读写恢复正常，确认可以关单，本次处理完毕。"},
+        {"messageId": "mC==", "sender": "聂伟", "createTime": "2026-10-16 11:00:00",
+         "text": "没有了，谢谢。"},
+    ]
+    m_entry = {"subgroup_messages": m_submsgs,
+               "signals": T.compute_signals(m_ticket, m_submsgs)}
+    merged = T._merged_signals(m_ticket, m_entry, _date(2026, 10, 16))
+    assert "engineer_summary_msgs" in merged and "customer_confirm_msgs" in merged, merged
+    assert len(merged["engineer_summary_msgs"]) == 1, merged
+    assert len(merged["customer_confirm_msgs"]) == 1, merged
+    assert isinstance(merged.get("urgency"), dict), merged
+    assert merged["urgency"]["days_span"] == 0, merged
+
+    # ---- publish._watermark ----
+    assert "总结子代理缺失" in T._watermark(True, {}), T._watermark(True, {})
+    assert "未产出情绪判定" in T._watermark(False, {"T1": {"sentiment_missing": True}})
+    assert T._watermark(False, {"T1": {"sentiment": {"level": "无"}}}) == ""
+
+    # ---- 新 fixture：cards-2026-10-16-attention.json（催单/安全/普通完结三张卡）----
+    fix_attn_path = os.path.join(HERE, "fixtures", "cards-2026-10-16-attention.json")
+    with open(fix_attn_path, encoding="utf-8") as fh:
+        fix_attn = json.load(fh)
+    tk_a, order_a, w_a = T.parse_cards(fix_attn["messages"], fix_attn["main_cid"])
+    assert w_a == [], w_a
+    exp_a = fix_attn["expected"]
+    assert order_a == exp_a["order"], order_a
+    for tid_a, fields in exp_a["tickets"].items():
+        for k_a, v_a in fields.items():
+            assert tk_a[tid_a][k_a] == v_a, f"{tid_a}.{k_a}: {tk_a[tid_a][k_a]!r} != {v_a!r}"
+    # 催单信号走子群消息路径（真实生产形态，2026-10-16 修复的 bug）：建单卡本身不含催单信息，
+    # 催单事件是子群里阿里云服务台的独立机器人消息（fixture 的 subgroup_messages 段）。
+    sub_a = fix_attn["subgroup_messages"]
+    urge_t = tk_a["E2610144URGE01"]
+    # 负控：建单卡（仅 Tips 有催单按钮链接）不触发催单信息
+    assert not T.RE_URGE.search(urge_t["create_card_text"]), "建单卡不应含催单信息（那是按钮链接）"
+    assert T._detect_urge([], urge_t["create_card_text"], urge_t["done_card_text"]) == ""
+    # 正控：子群消息命中「催单信息：<font >业务阻塞</font>」
+    urge_sig = T.compute_urgency_signals(
+        urge_t, sub_a["E2610144URGE01"], _date(2026, 10, 16),
+        create_card_text=urge_t["create_card_text"], done_card_text=urge_t["done_card_text"])
+    assert urge_sig["urge_reason"] == exp_a["urge_reason"], urge_sig
+    assert urge_sig["days_span"] == 2, urge_sig  # E261014 建单 → 工单日 2026-10-16
+    # 安全卡：标题含 waf/注入/漏洞 → safety_hit 非空
+    safe_sig = T.compute_urgency_signals(tk_a["E2610164SAFE01"], sub_a["E2610164SAFE01"],
+                                         _date(2026, 10, 16))
+    assert safe_sig["safety_hit"] != "", safe_sig
+    # 普通当天完结卡：completed True + span 0 + 无 sentiment → ⚪常规
+    done_a = tk_a["E2610164DONE01"]
+    done_sig = T.compute_urgency_signals(done_a, sub_a["E2610164DONE01"], _date(2026, 10, 16),
+                                         create_card_text=done_a["create_card_text"],
+                                         done_card_text=done_a["done_card_text"])
+    assert T.compute_attention(done_a, done_sig, "无")[0] == "⚪", done_sig
+    # 催单卡跨天+催单 → 🔴（优先级验证）
+    assert T.compute_attention(urge_t, urge_sig, "无")[:2] == ("🔴", "重点")
 
     print("REGRESSION OK")
 

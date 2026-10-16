@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 from .config import OUT_DIR, cfg_tz, load_config, select_customers, window_of
-from .parse import compute_signals, parse_cards
+from .parse import compute_signals, compute_urgency_signals, parse_cards
 from .transport import RETRY_AUTH, AccessDenied, _paginate, run_dws
 
 LIMIT = 100
@@ -106,11 +106,24 @@ def collect_one(customer, date_str):
     return cid, tickets, order, transcripts, warnings
 
 
+def _merged_signals(ticket, entry, work_day):
+    """合并确定性信号（AGENTS.md 规则 R）：compute_signals（实质状态用）+
+    compute_urgency_signals（关注等级用），写入 slice.signals[tid]。work_day＝工单日
+    date 对象（存活天数锚点，用 transcripts["date"] 而非跑批当日 → 补跑可复现）。"""
+    base = entry.get("signals") or {}
+    urgency = compute_urgency_signals(
+        ticket, entry.get("subgroup_messages") or [], work_day,
+        create_card_text=ticket.get("create_card_text", ""),
+        done_card_text=ticket.get("done_card_text", ""))
+    return {**base, "urgency": urgency}
+
+
 def _build_slice(customer, cid, tickets, order, transcripts, warnings):
     """transcripts → collect-{date}.json 的客户 slice。
     subgroup_msg_ids / subgroup_msg_times 写在 tickets[tid] 内部（ticket 级），
     render 的「（窗口外）」标注从同一层级读取（曾误读 slice 级恒 None，评审 P0）。"""
     tr = transcripts["tickets"]
+    work_day = datetime.strptime(transcripts["date"], "%Y-%m-%d").date()
     return {
         "name": customer["name"], "cid": cid, "ticket_order": order,
         "warnings": warnings,
@@ -121,7 +134,7 @@ def _build_slice(customer, cid, tickets, order, transcripts, warnings):
                                                tr[tid]["subgroup_messages"]}}
                     for tid in order},
         "probe_errors": {tid: tr[tid]["probe_error"] for tid in order},
-        "signals": {tid: tr[tid]["signals"] for tid in order},
+        "signals": {tid: _merged_signals(tickets[tid], tr[tid], work_day) for tid in order},
         "subgroup_readable": {tid: tr[tid]["subgroup_readable"] for tid in order},
     }
 
