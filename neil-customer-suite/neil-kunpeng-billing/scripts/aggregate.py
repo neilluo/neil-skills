@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""aggregate.py —— bills_raw.json → arch.json v2（neil-kunpeng-expert 归线聚合器）
+"""aggregate.py —— bills_raw.json → arch.json v2（neil-kunpeng-billing 归线聚合器）
 
-产出契约：docs/arch_schema.md（v2，唯一事实源）。本脚本零第三方依赖，只用标准库。
+产出契约：../neil-customer-arch/docs/arch_schema.md（v2，唯一事实源；随渲染层落在 neil-customer-arch）。
+本脚本零第三方依赖，只用标准库；只产出 arch.json，不渲染（画图交 neil-customer-arch）。
 
 用法：
     python3 scripts/aggregate.py --in bills_raw.json --out arch.json \
@@ -363,7 +364,7 @@ MEMORY_POOL_FAMILY = "memory-pool"
 MAX_SAT_FAMILIES = 40          # 单个饱和产品最多铺多少张族卡，超出合并成「其它」卡
 
 # ---------------------------------------------------------------------------
-# 渲染预算（折叠阈值的唯一出处；docs/arch_schema.md 只认 arch.json，不认这些数字）
+# 渲染预算（折叠阈值的唯一出处；../neil-customer-arch/docs/arch_schema.md 只认 arch.json，不认这些数字）
 # ---------------------------------------------------------------------------
 MAX_COMPS_PER_LAYER = 12       # 单列（band × column）最多几张卡（沿用 v1）
 MAX_COMPS_PER_OBSERVE = 8      # observe 横条上限：>8 条折「其他 ×N」（arch_schema.md 规则 6）
@@ -2406,7 +2407,7 @@ def aggregate(raw, months_complete=None, rules_overrides=None, risks=None,
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="bills_raw.json → arch.json（契约见 docs/arch_schema.md）"
+        description="bills_raw.json → arch.json（契约见 ../neil-customer-arch/docs/arch_schema.md）"
     )
     parser.add_argument("--in", dest="inp", required=True, help="fetch_bills.js 落盘的原始 JSON")
     parser.add_argument("--out", dest="out", required=True, help="arch.json 输出路径")

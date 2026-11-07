@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Data-driven Excalidraw architecture renderer for neil-kunpeng-expert.
+"""Data-driven Excalidraw architecture renderer for neil-customer-arch.
 
 Consumes arch.json (contract: docs/arch_schema.md) and emits an Excalidraw v2
 JSON file.  Pure python3 stdlib; deterministic output (stable ids + seeds).

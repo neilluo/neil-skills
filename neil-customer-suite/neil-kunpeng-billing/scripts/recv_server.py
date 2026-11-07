@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""recv_server.py —— 浏览器 console 数据回传落地服务（neil-kunpeng-expert）
+"""recv_server.py —— 浏览器 console 数据回传落地服务（neil-kunpeng-billing）
 
 usercenter2 页签里的 fetch_bills.js 把 JSON POST 过来，本服务落盘。
 只绑 127.0.0.1，CORS 全开（浏览器页内跨域 POST 需要），POST 路径即文件名，

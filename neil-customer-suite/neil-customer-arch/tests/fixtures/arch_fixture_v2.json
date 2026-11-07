@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "customer": "示例客户（脱敏 fixture）",
+    "brand": "Converge AI",
+    "cid": "0000000000",
+    "uid": "0000000000000000",
+    "account": "example.onaliyun.com",
+    "months": ["202609", "202610"],
+    "months_complete": ["202609", "202610"],
+    "months_all": ["202609", "202610"],
+    "generated_at": "2026-11-05T10:00:00+08:00",
+    "sources": ["rg_links.json", "bill_instances.json"],
+    "schema_version": "v2",
+    "edge_cost_month": 3200,
+    "cost_coverage": 0.98,
+    "unattributed_cost": 210,
+    "saturation": {"fc": {"pages": 3, "roots": 23}, "gpdb": {"pages": 1, "roots": 2}},
+    "warnings": []
+  },
+  "summary_flow": [
+    "全球用户",
+    "边缘加速 CDN/GA/WAF",
+    "业务层 入口→计算→数据",
+    "平台共享层 APIGW/context/模型路由",
+    "基础设施 数据/消息/治理"
+  ],
+  "edge": {
+    "name": "全球边缘与加速",
+    "comps": [
+      {"id": "edge_cdn", "kind": "cdn", "name": "CDN 7 区加速", "evidence": "dcdn 计费项", "spec": "中国 5 区 + 海外 2 区", "cost": 1400, "note": ""},
+      {"id": "edge_ga", "kind": "ga", "name": "GA 跨境加速", "evidence": "ga 实例×1", "spec": "跨境带宽包 200Mbps", "cost": 1800, "note": ""}
+    ],
+    "note": "全球边缘与出口加速面，不归属单一业务泳道"
+  },
+  "lines": [
+    {
+      "id": "enter",
+      "name": "Enter Pro（生应用/网页）",
+      "group": "enter-prod",
+      "attribution": "resource_group",
+      "vpc": "vpc-example0001",
+      "color": "enter",
+      "cost_month": 13193,
+      "layers": {
+        "入口": [
+          {"id": "enter_access_nlb", "kind": "nlb", "name": "NLB 入口", "evidence": "nlb-example01", "spec": "标准型", "cost": 320, "note": ""},
+          {"id": "enter_access_apigw", "kind": "apigw", "name": "APIGW 网关", "evidence": "apigw-enter", "spec": "专享实例", "cost": 1800, "note": ""}
+        ],
+        "计算": [
+          {"id": "enter_compute_fc", "kind": "fc", "name": "FC 函数 23 个", "evidence": "prod-coding-agent-*", "spec": "512MB×饱和抽样", "cost": null, "note": "饱和抽样族基数进 name"},
+          {"id": "enter_compute_supabase", "kind": "supabase", "name": "Supabase 池 spb×44", "evidence": "spb-example01", "spec": "spb-t4n00pool44+game2", "cost": 2400, "note": ""}
+        ],
+        "数据": [
+          {"id": "enter_data_redis", "kind": "redis", "name": "Redis 集群 9 分片", "evidence": "r-example01｜单可用区部署", "spec": "8GB×9", "cost": 3800, "note": ""},
+          {"id": "enter_data_rds", "kind": "rds", "name": "RDS PG 16 高可用", "evidence": "pgm-example01", "spec": "8C32G", "cost": 2100, "note": ""},
+          {"id": "enter_data_kafka", "kind": "kafka", "name": "Kafka 消息队列", "evidence": "alikafka-enter", "spec": "专业版 12MB/s", "cost": 1500, "note": ""}
+        ]
+      },
+      "observe": [
+        {"id": "enter_obs_sls", "kind": "sls", "name": "SLS project enter-log", "evidence": "sls enter-log/*", "spec": "", "cost": 240, "note": ""}
+      ],
+      "risks": []
+    },
+    {
+      "id": "game",
+      "name": "Game（组合报告/对战）",
+      "group": "game-prod",
+      "attribution": "resource_group",
+      "vpc": "vpc-example0002",
+      "color": "game",
+      "cost_month": 8600,
+      "layers": {
+        "入口": [
+          {"id": "game_access_nlb", "kind": "nlb", "name": "NLB 游戏入口", "evidence": "nlb-game01", "spec": "标准型", "cost": 320, "note": ""}
+        ],
+        "计算": [
+          {"id": "game_compute_ack", "kind": "ack", "name": "ACK Pro 6 节点", "evidence": "c-example01", "spec": "ecs.g7.2xlarge×6", "cost": 4200, "note": ""}
+        ],
+        "数据": [
+          {"id": "game_data_mongo", "kind": "mongo", "name": "Mongo 7.0 副本集", "evidence": "dds-example01", "spec": "4C8G×3", "cost": 2400, "note": ""},
+          {"id": "game_data_oss", "kind": "oss", "name": "OSS 战报素材桶", "evidence": "combos-report-assets", "spec": "标准存储", "cost": 680, "note": ""}
+        ]
+      },
+      "observe": [
+        {"id": "game_obs_sls", "kind": "sls", "name": "SLS project game-log", "evidence": "sls game-log/*", "spec": "", "cost": 180, "note": ""}
+      ],
+      "risks": [
+        {"level": "P0", "target": "game_data_mongo", "text": "副本集单可用区，跨 AZ 故障即停摆"},
+        {"level": "P1", "target": "game_compute_ack", "text": "节点池无弹性上限，大促打满"}
+      ]
+    }
+  ],
+  "shared": {
+    "id": "shared",
+    "name": "平台共享层 converge-prod",
+    "group": "converge-prod",
+    "attribution": "resource_group",
+    "cost_month": 5400,
+    "layers": {
+      "入口": [
+        {"id": "shared_access_apigw", "kind": "apigw", "name": "统一入口 APIGW", "evidence": "apigw-shared", "spec": "专享实例", "cost": 1800, "note": ""}
+      ],
+      "计算": [
+        {"id": "shared_compute_acs", "kind": "acs", "name": "ACS 共享容器池", "evidence": "acs-shared", "spec": "", "cost": 900, "note": ""}
+      ],
+      "数据": [
+        {"id": "shared_data_adbpg", "kind": "adbpg", "name": "ADBPG 记忆/向量库", "evidence": "gp-example01", "spec": "8C32G×2", "cost": 1600, "note": ""},
+        {"id": "shared_data_oss", "kind": "oss", "name": "OSS 共享资产桶", "evidence": "shared-assets", "spec": "标准存储", "cost": 320, "note": ""}
+      ],
+      "AI": [
+        {"id": "shared_ai_bailian", "kind": "bailian", "name": "百炼 ws 平台空间", "evidence": "llm-example01", "spec": "工作空间", "cost": 600, "note": ""},
+        {"id": "shared_ai_model_ext", "kind": "model_ext", "name": "多云模型上游直供", "evidence": "api.minimax/claude 直连", "spec": "", "cost": 180, "note": ""}
+      ]
+    },
+    "observe": [
+      {"id": "shared_obs_arms", "kind": "arms", "name": "ARMS 应用监控", "evidence": "arms-shared", "spec": "", "cost": 120, "note": ""}
+    ],
+    "risks": []
+  },
+  "infra": {
+    "id": "infra",
+    "name": "基础设施 infra-prod",
+    "group": "infra-prod",
+    "attribution": "resource_group",
+    "cost_month": 4200,
+    "layers": {
+      "核心库": [
+        {"id": "infra_core_rds", "kind": "rds", "name": "RDS MySQL 元数据库", "evidence": "rm-example01", "spec": "4C8G 高可用", "cost": 900, "note": ""}
+      ],
+      "消息流": [
+        {"id": "infra_msg_ons", "kind": "rocketmq", "name": "RocketMQ 5.0", "evidence": "ons-example01", "spec": "铂金版", "cost": 1400, "note": ""}
+      ],
+      "分析同步": [
+        {"id": "infra_ana_dts", "kind": "dts", "name": "DTS 同步链路", "evidence": "dts-example01", "spec": "large", "cost": 480, "note": ""}
+      ],
+      "治理注册": [
+        {"id": "infra_gov_mse", "kind": "nacos", "name": "MSE Nacos 注册中心", "evidence": "mse-example01", "spec": "专业版 2C4G×3", "cost": 620, "note": ""}
+      ],
+      "容器网络": [
+        {"id": "infra_net_nat", "kind": "other", "name": "NAT 网关（出口）", "evidence": "ngw-example01", "spec": "增强型", "cost": 400, "note": ""},
+        {"id": "infra_net_privatelink", "kind": "other", "name": "PrivateLink 终端节点", "evidence": "ep-example01", "spec": "", "cost": 180, "note": ""}
+      ]
+    },
+    "observe": [
+      {"id": "infra_obs_prom", "kind": "prom", "name": "PROM 可观测底座", "evidence": "prom-example01", "spec": "", "cost": 220, "note": ""}
+    ],
+    "risks": [
+      {"level": "P2", "target": "infra_net_nat", "text": "单 NAT 无冗余，出口单点"}
+    ]
+  },
+  "cross_links": [
+    {"from": "enter_data_rds", "to": "shared_data_adbpg", "label": "会话上下文落记忆库", "kind": "data"},
+    {"from": "game_compute_ack", "to": "shared_ai_model_ext", "label": "模型路由兜底", "kind": "ai"}
+  ]
+}

@@ -1,13 +1,16 @@
 ---
-name: neil-kunpeng-expert
-description: 从阿里内部鲲鹏/devata 体系（usercenter2 实例级账单）按需深钻某客户 UID 的实例级账单，按资源组分离 + 命名/VPC/SLS/kind 旁证归线还原客户云上架构，产出 arch.json 并渲染架构图。仅用户主动要求画架构图/账单深钻时触发；每日资源快照与客户动态监测走 neil-customer-radar（全脚本无人值守），本 skill 要浏览器登录态、不做日批。当用户提到 鲲鹏 / devata / 账单抽取 / 客户架构还原 / 资源组分离 / 实例级账单 / CRM360 / usercenter2 / 还原某客户云架构 / 从账单画架构图 / 画架构图 时使用。
+name: neil-kunpeng-billing
+description: 从阿里内部鲲鹏/devata 体系（usercenter2 实例级账单）按需深钻某客户 UID 的实例级账单，按资源组分离 + 命名/VPC/SLS/kind 旁证归线还原客户云上架构，产出 arch.json（schema v2）。仅用户主动要求账单深钻/还原客户云架构时触发；画架构图交同套件 neil-customer-arch（渲染层，消费本 skill 产出的 arch.json）；每日资源快照与客户动态监测走 neil-customer-radar（全脚本无人值守）。本 skill 要浏览器登录态、不做日批、不渲染。当用户提到 鲲鹏 / devata / 账单抽取 / 客户架构还原 / 资源组分离 / 实例级账单 / CRM360 / usercenter2 / 还原某客户云架构 / 从账单出 arch.json 时使用。
 ---
 
-# neil-kunpeng-expert
+# neil-kunpeng-billing
 
-> 定位（2026-11-07 套件化）：本 skill 是**按需深钻+画图**层。每日资源量记录、客户动态
-> （新产品/停用/流量异动）由同套件 [neil-customer-radar](../neil-customer-radar/SKILL.md)
-> 全脚本日批承载；本 skill 只在用户主动要求时跑（要 usercenter2 浏览器登录态）。
+> 定位（2026-11-08 拆分）：本 skill 是**账单深钻 + 归线**层，产出 arch.json（schema v2）即止，
+> **不渲染**。画架构图（HTML 主路径 + Excalidraw legacy）已抽出到同套件
+> [neil-customer-arch](../neil-customer-arch/SKILL.md)，消费本 skill 产出的 arch.json。
+> 每日资源量记录、客户动态（新产品/停用/流量异动）由
+> [neil-customer-radar](../neil-customer-radar/SKILL.md) 全脚本日批承载；本 skill 只在用户主动
+> 要求时跑（要 usercenter2 浏览器登录态）。
 > 客户标识（uid/cid/资源组/rules）统一读套件 `../config/customers.json` 的
 > `customers[].devata` 与 `customers[].kunpeng`，禁在本 skill 内新增硬编码客户串。
 
@@ -15,13 +18,13 @@ description: 从阿里内部鲲鹏/devata 体系（usercenter2 实例级账单�
 （实例 ID/昵称/规格/配置串含 VPC 与可用区/资源组/标签/计费项），做「产品语义映射 + 资源组分离 + 命名聚类」
 就能还原产品组合、部署拓扑、业务线划分与成本分层——无需控制台/CMDB。
 
-- **输出契约**：[docs/arch_schema.md](docs/arch_schema.md)（aggregate.py 产出、渲染侧消费的**唯一接口**，改任何字段前先改它）。
+- **输出契约**：[../neil-customer-arch/docs/arch_schema.md](../neil-customer-arch/docs/arch_schema.md)（aggregate.py 产出、渲染侧消费的**唯一接口**，改任何字段前先改它；文档随渲染层落在 neil-customer-arch）。
 - **接口备忘**：[references/kunpeng-apis.md](references/kunpeng-apis.md)（两系统 endpoint、参数、tableType、CSRF 提取法、6 个坑、能力边界）。
 - **客户视角修正**：[internal/customer-view-kunqi.md](internal/customer-view-kunqi.md)（坤启客户会议确认的账单不可见层：CF 上游/中台 Credit/net 枢纽 VPC/Lab 同柱/重保事实；对客画图时客户口径优先于账单推断）。
-- **风险清单示例**：[config/risks_kunqi.json](config/risks_kunqi.json)（坤启/Converge AI 本会话实测结论）。
+- **风险清单示例**：[internal/risks_kunqi.json](internal/risks_kunqi.json)（坤启/Converge AI 实测结论；gitignored 真数据，PUBLIC 红线禁入库）。
 - **零第三方依赖**：Python 只用标准库，浏览器侧只用原生 fetch。
 
-## 工作流（四步 + 可选渲染）
+## 工作流（四步，产出 arch.json 即止；渲染交 neil-customer-arch）
 
 ### 步骤 1 —— 浏览器接通 usercenter2
 
@@ -73,26 +76,25 @@ python3 scripts/aggregate.py \
   --risks internal/risks_kunqi.json
 ```
 
-按 docs/arch_schema.md 的归线规则产出 arch.json：资源组直接命中 → 命名前缀/标签 → VPC → SLS project → kind 兜底；
+按 [../neil-customer-arch/docs/arch_schema.md](../neil-customer-arch/docs/arch_schema.md) 的归线规则产出 arch.json：资源组直接命中 → 命名前缀/标签 → VPC → SLS project → kind 兜底；
 月均只算完整月；`instance_rows`/`group_rows` 用 hashKey 去重（否则金额翻倍）；饱和抽样族基数进 `name`、`cost=null`；
 无实例维度产品（sae/prometheus/…）由 product_rows 补 COMP；风险按 target/evidence 解析到真实 comp id，解析不到落 `meta.unresolved_risks` 并 warn。
 换客户时用 `--rules rules.json` 或 payload `meta.rules` 覆盖命名/VPC/SLS 规则（默认值是坤启实测串）。
 
-### 步骤 5 —— 渲染架构图（HTML 主路径）
+### 步骤 5 —— 交 neil-customer-arch 渲染（本 skill 不渲染）
 
-arch.json（schema v2）喂给 `scripts/render_arch_html.py` 产出单文件 HTML 架构图：
+arch.json（schema v2）产出后，画图**不在本 skill**。把 arch.json 路径交给
+[neil-customer-arch](../neil-customer-arch/SKILL.md)：
 
 ```bash
-python3 scripts/render_arch_html.py /tmp/<customer>-bill-arch/arch.json \
-  -o /tmp/<customer>-bill-arch/arch.html
+# 对客脱敏主路径（默认隐金额/UID/CID/schema/生成时间）
+python3 ../neil-customer-arch/scripts/render_arch_html.py \
+  /tmp/<customer>-bill-arch/arch.json -o /tmp/<customer>-bill-arch/arch.html
+# 内部版（带成本/UID/CID，自动加红色禁止外发横幅）：加 --internal
 ```
 
-布局（v2，docs/arch_schema.md）：summary_flow 链 → edge 全球边缘顶带 → 业务泳道置顶
-（每道「入口｜计算｜数据/消息」三列 ＋ 观测横条贯穿 ＋ 依赖 chips）→ 平台共享层 → 基础设施沉底
-（核心库｜消息流｜分析同步｜治理注册｜容器网络 五列 ＋ 可观测底座横条）；risks 贴 P0/P1/P2 badge。
-
-legacy：`scripts/render_excalidraw_arch.py` 仍可用（v1 六列泳道 + 右缘 trunk 箭头），
-仅在需要 Excalidraw 可编辑源时使用；其 fixture 测试保留。
+渲染布局、对客脱敏红线、交付目录分层等规则见 neil-customer-arch/AGENTS.md；
+Excalidraw 可编辑源（legacy）也在 neil-customer-arch/scripts/render_excalidraw_arch.py。
 
 ## 六个坑（务必先看，references/kunpeng-apis.md §3 有完整版）
 

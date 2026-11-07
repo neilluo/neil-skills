@@ -137,11 +137,11 @@
       "radar": { "daily_watch": true, "base_id": null, "snapshot_table_id": null, "events_table_id": null },
       "kunpeng": {
         "rules_file": null,
-        "risks_file": "neil-kunpeng-expert/internal/risks_kunqi.json",
-        "cross_links_file": "neil-kunpeng-expert/internal/cross_links_kunqi.json",
+        "risks_file": "neil-kunpeng-billing/internal/risks_kunqi.json",
+        "cross_links_file": "neil-kunpeng-billing/internal/cross_links_kunqi.json",
         "resource_groups": ["enter-prod", "framia-prod", "game-prod", "concat-prod", "work-prod", "anycap-prod", "converge-prod", "infra-prod"]
       },
-      "notes": "Converge AI；账单深钻/架构图已实测客户（references/customer-view-kunqi.md 口径优先于账单推断）；report_customer_name 待 616045 播种核对"
+      "notes": "Converge AI；账单深钻/架构图已实测客户（neil-kunpeng-billing/internal/customer-view-kunqi.md 口径优先于账单推断）；report_customer_name 待 616045 播种核对"
     }
   ]
 }

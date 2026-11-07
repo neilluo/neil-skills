@@ -1,4 +1,9 @@
-# arch.json 契约 v2（neil-kunpeng-expert 抽取链 → HTML 渲染链 的唯一接口）
+# arch.json 契约 v2（neil-kunpeng-billing 抽取归线链 → neil-customer-arch 渲染链 的唯一接口）
+
+> 归属（2026-11-08 拆分）：本契约文档随渲染层落在 neil-customer-arch/docs/。
+> 生产方 neil-kunpeng-billing/scripts/aggregate.py 产出 arch.json（引用本文件 38 处规则注释，
+> 路径 `../neil-customer-arch/docs/arch_schema.md`）；消费方本 skill 的两个渲染器读 arch.json。
+> 改任何字段前先改本文件，两侧同步。
 
 版本：v2（2026-11-05，取代 v1）。变更动机：架构图改为「业务层置顶、共享/基础设施沉底、观测横贯」的组织方式；渲染器改为单文件 HTML（excalidraw 渲染器降级为可选 legacy）。
 
@@ -64,7 +69,7 @@ kind 词表沿用 v1（nlb,clb,apigw,eip,cdn,ga,waf,fc,acs,ack,sae,supabase,rds,
 mongo,es,clickhouse,adbpg,oss,nas,kafka,rocketmq,dts,maxcompute,bailian,model_ext,
 memory,sls,prom,cms,arms,nacos,sentry,other）。
 
-## 归线/分块规则（aggregate.py v2 内置）
+## 归线/分块规则（neil-kunpeng-billing/scripts/aggregate.py v2 内置）
 
 1. v1 归线规则 1-4 全部保留（资源组→命名→VPC→SLS→kind；Supabase 池折叠；完整月均值）。
 2. 观测剥离：kind ∈ {sls,prom,cms,arms,hdm} 的 COMP 从 layers 移入所属 line/shared/infra 的 observe。
@@ -78,7 +83,8 @@ memory,sls,prom,cms,arms,nacos,sentry,other）。
 6. 折叠阈值沿用 v1（每列 ≤12、长尾「其他 ×N」）；observe 横条不折叠上限但 >8 条折「其他」。
 7. comp id 规则：`<line>_<col>_<slug>`，col ∈ access|compute|data|ai|core|msg|ana|gov|net|edge；
    observe 内 comp id 用 `<line>_obs_<slug>`。cross_links/risks 的 target 必须随 id 迁移同步更新
-   （internal/cross_links_kunqi.json、internal/risks_kunqi.json）。
+   （neil-kunpeng-billing/internal/cross_links_kunqi.json、neil-kunpeng-billing/internal/risks_kunqi.json，
+   gitignored 真数据；由 aggregate.py `--risks` 与 payload `meta.rules` 消费，渲染层不直接读）。
 
 ## 渲染约定（render_arch_html.py）
 

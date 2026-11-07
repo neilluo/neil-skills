@@ -1,6 +1,6 @@
-# 鲲鹏 / devata 账单体系接口备忘（neil-kunpeng-expert）
+# 鲲鹏 / devata 账单体系接口备忘（neil-kunpeng-billing）
 
-> 本文件是「怎么把数据拿下来」的备忘；「拿到之后怎么组织」看 [../docs/arch_schema.md](../docs/arch_schema.md)。
+> 本文件是「怎么把数据拿下来」的备忘；「拿到之后怎么组织」看 [../../neil-customer-arch/docs/arch_schema.md](../../neil-customer-arch/docs/arch_schema.md)。
 > 所有内网 endpoint 均需 cookie 会话鉴权（浏览器已登录状态），无法用 curl 直接调。
 
 ## 0. 入口链路

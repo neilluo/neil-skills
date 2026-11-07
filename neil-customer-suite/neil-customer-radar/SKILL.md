@@ -1,6 +1,6 @@
 ---
 name: neil-customer-radar
-description: 重点客户资源雷达日批。从 devata 公共云资源看板（FBI 616045）+ MaaS 数据集（76050019）经 ChatBI 开放 API 分组问数采每客户流量/保有量/收入日序列，幂等写入每客户钉钉 AI 表格快照，跑客户动态分析（新产品启用/产品停用/网络流量异动=迁移信号/MaaS 趋势），有信号才推送，单文件 HTML 看板重生式刷新。当用户提到 客户雷达 / 资源快照 / 客户动态 / 新产品启用 / 产品停用 / 流量异动 / 迁移信号 / 每日快照 / 跑雷达 时使用。画架构图不在此 skill（走 neil-kunpeng-expert，仅主动触发）。
+description: 重点客户资源雷达日批。从 devata 公共云资源看板（FBI 616045）+ MaaS 数据集（76050019）经 ChatBI 开放 API 分组问数采每客户流量/保有量/收入日序列，幂等写入每客户钉钉 AI 表格快照，跑客户动态分析（新产品启用/产品停用/网络流量异动=迁移信号/MaaS 趋势），有信号才推送，单文件 HTML 看板重生式刷新。当用户提到 客户雷达 / 资源快照 / 客户动态 / 新产品启用 / 产品停用 / 流量异动 / 迁移信号 / 每日快照 / 跑雷达 时使用。画架构图不在此 skill（走 neil-customer-arch 渲染，arch.json 由 neil-kunpeng-billing 深钻产出，均仅主动触发）。
 ---
 
 # neil-customer-radar
@@ -33,7 +33,7 @@ python3 -m neil_radar.cli dashboard               # 6 看板重生式刷新（�
 ## 能力边界（诚实声明）
 
 - 616045 组件**无产品名维度**：products 段=holdings 派生的产品族存在性；产品级存在性/实例清单
-  走 neil-kunpeng-expert 账单深钻（要浏览器登录态，按需触发）。
+  走 neil-kunpeng-billing 账单深钻（要浏览器登录态，按需触发）。画架构图另走 neil-customer-arch（渲染 arch.json）。
 - 报表缺行客户（流量零值）≠ 停用：存在性以 holdings 为锚。
 - ChatBI 自然语言→SQL 有非确定性：合计对账门是唯一防线，失败自动降级逐客户问数。
 - 7 日移动平均需 ≥4 天历史：新装客户前几日无信号属预期，非故障。

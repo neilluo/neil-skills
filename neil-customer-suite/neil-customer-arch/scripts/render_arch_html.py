@@ -52,34 +52,85 @@ def money(v: Any, client: bool = False) -> str:
     return f"¥{int(v):,}/月"
 
 
+def build_masks(meta: Dict[str, Any], client: bool) -> List[str]:
+    """对客版要在 evidence/note 串里掩掉的内部标识。
+
+    必须过滤空值：uid="" 时 str.replace("", "•••") 会在每个字符间插弹号，
+    把 evidence 打成「•••d•••c•••d•••n•••」乱码（实测事故路径）；
+    uid 缺失时 str(None)="None" 会误伤任何含 None 字样的 evidence。
+    """
+    if not client:
+        return []
+    out = []
+    for k in ("uid", "cid"):
+        v = meta.get(k)
+        s = "" if v is None else str(v)
+        if s and s.lower() != "none":
+            out.append(s)
+    return out
+
+
+# 内部归线方法论 / 内部口径术语，对客版一律改写或剥除（AGENTS 第 9 条红线）。
+# untagged:xxx 是 aggregate 归线失败兜底值，直译给客户等于暴露内部方法。
+_CLIENT_STRIP_PATTERNS = (
+    (r"untagged[:：]\s*\S+", ""),
+    (r"cost 最小的 \d+ 张卡[:：]?\s*", ""),
+    (r"成本未拆分\s*", ""),
+    (r"金额见 product_rows", ""),
+    (r"饱和抽样根计数·未收敛", "抽样统计"),
+    (r"饱和抽样存在性证据", "存在性证据"),
+    (r"无实例维度·产品级取证", "产品级"),
+)
+
+
+def client_scrub(text: str) -> str:
+    """对客版内部术语改写。先改写后剥除，避免留下空括号/孤立分隔符。"""
+    import re as _re
+    for pat, rep in _CLIENT_STRIP_PATTERNS:
+        text = _re.sub(pat, rep, text)
+    # 剥除后清理残留的空括号与首尾/连续分隔符
+    text = _re.sub(r"[（(]\s*[）)]", "", text)
+    text = _re.sub(r"\s*[｜|]\s*$", "", text)
+    text = _re.sub(r"^[｜|]\s*", "", text)
+    text = _re.sub(r"([｜|])\s*\1+", r"\1", text)
+    return text.strip()
+
+
 def card_html(c: Dict[str, Any], risks_by_target: Dict[str, List[Dict]],
               client: bool = False, masks: List[str] = None) -> str:
     badges = ""
     for r in risks_by_target.get(c.get("id", ""), []):
-        fg, bg = BADGE.get(r["level"], BADGE["P2"])
+        level = r.get("level") or "P2"   # 缺 level 不许 KeyError 整图崩
+        fg, bg = BADGE.get(level, BADGE["P2"])
         badges += (f'<span class="badge" style="color:{fg};background:{bg};'
-                   f'border:1px solid {fg}">{esc(r["level"])}</span>')
+                   f'border:1px solid {fg}">{esc(level)}</span>')
     ev = c.get("evidence") or ""
     for m in (masks or []):
         ev = ev.replace(m, "•••")
-    if client:
-        import re as _re
-        ev = _re.sub(r"cost 最小的 \d+ 张卡[:：]\s*", "", ev)
-        ev = _re.sub(r"成本未拆分\s*", "", ev)
-    ev = esc(ev)
-    if len(ev) > 34:
-        ev = ev[:33] + "…"
     note = c.get("note") or ""
     if client:
-        import re as _re2
-        note = _re2.sub(r"cost 最小的 \d+ 张卡[；;]?\s*", "", note)
-        note = _re2.sub(r"长尾合并（\s*）", "长尾合并", note)
+        ev = client_scrub(ev)
+        note = client_scrub(note)
+    # 先截断再转义：反过来会把 &amp; 切成 &am… 留裸 &
+    if len(ev) > 34:
+        ev = ev[:34] + "…"
+    ev = esc(ev)
     note = esc(note)
     sub = ev + (f"｜{note}" if note else "")
     cost = money(c.get("cost"), client)
     cost_html = f'<div class="ccost">{cost}</div>' if cost else ""
     return (f'<div class="card">{badges}<div class="cname">{esc(c.get("name"))}'
             f'</div><div class="csub">{sub}</div>{cost_html}</div>')
+
+
+def _group_label(line: Dict[str, Any], client: bool) -> str:
+    """资源组名标签。对客版必须剥掉 untagged:命名/untagged:VPC 这类**我方归线方法论**兜底值
+    （aggregate 归线失败时写进 group，直译给客户等于暴露内部规则）。
+    客户自己的资源组名（enter-prod 等）是客户账号内自有命名，保留。"""
+    g = line.get("group") or ""
+    if client:
+        g = client_scrub(g)
+    return g
 
 
 def lane_html(line: Dict[str, Any], risks_by_target: Dict[str, List[Dict]],
@@ -125,7 +176,7 @@ def lane_html(line: Dict[str, Any], risks_by_target: Dict[str, List[Dict]],
     return (f'<section class="lane" style="background:{bg};border-color:{stroke}">'
             f'<header style="border-left:6px solid {accent}">'
             f'<span class="lname" style="color:{stroke}">{esc(line.get("name"))}</span>'
-            f'<span class="lgrp">{esc(line.get("group"))}</span>'
+            f'<span class="lgrp">{esc(_group_label(line, client))}</span>'
             f'{cost_html}</header>'
             f'<div class="cols" style="grid-template-columns:repeat({len(col_keys)},1fr)">'
             f'{cols}</div>{obs_html}{dep_html}</section>')
@@ -179,14 +230,20 @@ def biz_col_html(line: Dict[str, Any], risks_by_target: Dict[str, List[Dict]],
     return (f'<div class="bizcol" style="background:{bg};border-color:{stroke}">'
             f'<div class="bhead" style="border-left:4px solid {accent}">'
             f'<span class="bname" style="color:{stroke}">{esc(line.get("name"))}</span>'
-            f'<span class="bgrp">{esc(line.get("group"))}</span>{cost_html}</div>'
+            f'<span class="bgrp">{esc(_group_label(line, client))}</span>{cost_html}</div>'
             f'{blocks}{obs_html}{dep_html}</div>')
+
+
+INTERNAL_BANNER = ('<div style="background:#dc2626;color:#fff;'
+                   'font:700 13px/1.6 sans-serif;text-align:center;'
+                   'padding:6px 0;position:sticky;top:0;z-index:99">'
+                   '内部版：含成本与 UID/CID，禁止对客外发</div>')
 
 
 def build(arch: Dict[str, Any], client: bool = False) -> str:
     meta = arch.get("meta") or {}
-    # 对客脱敏掩码：UID 等内部标识在 evidence 串里出现时替换
-    masks = [str(meta.get("uid"))] if client else []
+    # 对客脱敏掩码：UID/CID 等内部标识在 evidence 串里出现时替换（空值保护见 build_masks）
+    masks = build_masks(meta, client)
     risks_by_target: Dict[str, List[Dict]] = {}
     all_blocks = list(arch.get("lines") or []) + \
         [arch.get("shared"), arch.get("infra")]
@@ -215,10 +272,14 @@ def build(arch: Dict[str, Any], client: bool = False) -> str:
             deps_by_lane.setdefault(src, []).append(
                 {"label": lk.get("label"), "kind": lk.get("kind"), "to_lane": dst})
 
+    # summary_flow 按契约（docs/arch_schema.md 顶层结构）在 arch 顶层；meta 兜底只为兼容历史文件。
+    # 曾长期误读 meta.get("summary_flow") 导致对客图概览链恒为空（aggregate 从不写 meta.summary_flow）。
+    summary_flow = arch.get("summary_flow") or meta.get("summary_flow") or []
+
     flow = "".join(
-        f'<span class="fnode{" fend" if i in (0, len(meta.get("summary_flow") or []) - 1) else ""}">'
+        f'<span class="fnode{" fend" if i in (0, len(summary_flow) - 1) else ""}">'
         f'{esc(n)}</span><span class="farrow">→</span>'
-        for i, n in enumerate(meta.get("summary_flow") or []))[:-len('<span class="farrow">→</span>')]
+        for i, n in enumerate(summary_flow))[:-len('<span class="farrow">→</span>')]
 
     edge = arch.get("edge") or {}
     edge_note = edge.get("note") or ""
@@ -233,14 +294,16 @@ def build(arch: Dict[str, Any], client: bool = False) -> str:
                  f'<div class="edgegrid">{edge_cards}</div></section>')
 
     biz_cols = ""
+    n_lines = len(arch.get("lines") or [])
     for line in arch.get("lines") or []:
         biz_cols += biz_col_html(line, risks_by_target,
                                  deps_by_lane.get(line.get("id", ""), []),
                                  lane_id_map, client, masks)
     lanes = (f'<section class="bizband"><header><span class="bandname">业务层'
-             f'</span><span class="bandsub">六条产品线同层并列 · 各自闭环 '
+             f'</span><span class="bandsub">{n_lines} 条产品线同层并列 · 各自闭环 '
              f'入口→计算→数据 · 观测横切</span></header>'
-             f'<div class="bizgrid">{biz_cols}</div></section>')
+             f'<div class="bizgrid" style="grid-template-columns:repeat({max(n_lines, 1)},minmax(0,1fr))">'
+             f'{biz_cols}</div></section>')
     shared = arch.get("shared") or {}
     shared_html = lane_html(shared, risks_by_target,
                             ["入口", "计算", "数据", "AI"],
@@ -268,6 +331,9 @@ def build(arch: Dict[str, Any], client: bool = False) -> str:
             f'<div class="meta">{meta_line}</div>'
             f'<div class="flow">{flow}</div></div>')
 
+    # 横幅在 build() 内注入而非 main()：任何 import build(client=False) 的调用方
+    # （测试、未来 cron、别的脚本）拿到的带钱版都必然带警示，禁出现「有 ¥ 无横幅」的裸奔产物。
+    banner = "" if client else INTERNAL_BANNER
     return f"""<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -314,7 +380,7 @@ gap:8px;padding:12px 14px}}
 .bizband>header{{display:flex;align-items:baseline;gap:10px;padding:9px 14px;
 border-bottom:1px solid var(--line);background:#f8fafc;border-radius:12px 12px 0 0}}
 .bandname{{font-weight:700;font-size:14px}} .bandsub{{font-size:11px;color:var(--sub)}}
-.bizgrid{{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+.bizgrid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
 gap:10px;padding:12px 14px 14px;align-items:start;overflow-x:auto}}
 .bizcol{{border:1px solid;border-radius:10px;overflow:hidden;min-width:0}}
 .bizcol .card{{padding:5px 7px;margin-bottom:5px}}
@@ -330,6 +396,7 @@ background:rgba(255,255,255,.85);border:1px solid var(--line);border-radius:4px;
 .bizcol .deps{{margin:0 10px 10px}}
 .bizcol .ochip i{{margin-left:4px}}
 </style></head><body>
+{banner}
 {head}
 {edge_html}
 {lanes}
@@ -358,11 +425,11 @@ def main() -> int:
         return 2
     out = build(arch, client=not a.internal)
     if a.internal:
-        out = out.replace("<body>",
-                          '<body><div style="background:#dc2626;color:#fff;'
-                          'font:700 13px/1.6 sans-serif;text-align:center;'
-                          'padding:6px 0;position:sticky;top:0;z-index:99">'
-                          '内部版：含成本与 UID/CID，禁止对客外发</div>', 1)
+        # 横幅由 build() 注入；此处自检而非重复注入，防「带钱版无警示」裸奔产物落盘。
+        if INTERNAL_BANNER not in out:
+            print("ERROR: 内部版缺警示横幅，拒绝写出（禁交付带钱无警示产物）",
+                  file=sys.stderr)
+            return 3
     with open(a.output, "w", encoding="utf-8") as fh:
         fh.write(out)
     print(f"wrote {a.output} ({len(out)} bytes)")

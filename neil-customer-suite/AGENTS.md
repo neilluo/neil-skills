@@ -21,7 +21,7 @@
    metrics.aliases 别名精确匹配；**回行列集非确定**（同问两次列集可能不同）：缺列触发
    collect._supplement_missing 补问自愈（只问缺的指标按客户+日期合并），补问后仍缺才记 failure。
 7. 616045 组件**无产品名维度**（仅产品团队码，2026-11-07 probe 实测）：products 段=holdings
-   指标派生的产品族存在性（collect._derive_products），产品级存在性走 kunpeng 账单深钻，禁宣称产品名级覆盖。
+   指标派生的产品族存在性（collect._derive_products），产品级存在性走 neil-kunpeng-billing 账单深钻，禁宣称产品名级覆盖。
 8. 报表缺行客户（流量为零者不在 traffic 组件）≠ 停用：分析层以 holdings 为存在性锚点。
 
 ## dws 执行契约（宿主约束，2026-11-07 实测）
@@ -39,6 +39,8 @@
     信号只报证据（日期区间+幅度+原始值），禁下「客户在迁云」类结论。
 13. 网络异动默认阈值（config thresholds，禁硬编码）：公网 7 日均值 |Δ|≥30% 且连续 3 天同向；
     专线流出 7 日均值跌 >50% 或归零=P1 迁移疑似。
-14. 画架构图仅用户主动触发，走 neil-kunpeng-expert（账单深钻+归线+渲染）；radar 日批不画图。
+14. 画架构图仅用户主动触发，分两层：账单深钻+归线产出 arch.json 走 neil-kunpeng-billing（要浏览器
+    登录态）；渲染 arch.json 出图走 neil-customer-arch（HTML 主路径默认对客脱敏 / excalidraw legacy）。
+    arch.json 契约 docs/arch_schema.md 随渲染层落在 neil-customer-arch/。radar 日批不画图。
 15. HTML 看板单文件重生式刷新（数据有变化才重写），不做 QW Pages 托管（发布要桌面确认弹窗，
     会卡死无人值守 cron）；远程查看由用户手动发布。

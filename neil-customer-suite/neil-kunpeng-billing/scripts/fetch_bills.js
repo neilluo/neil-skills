@@ -1,5 +1,5 @@
 /* ============================================================================
- * fetch_bills.js —— neil-kunpeng-expert 账单抽取（粘贴到 usercenter2 页签 console）
+ * fetch_bills.js —— neil-kunpeng-billing 账单抽取（粘贴到 usercenter2 页签 console）
  *
  * 用途：按配置对象逐月 × 逐产品拉实例级、逐月 × 逐资源组拉 group 级、逐月拉
  *       PRODUCT/ACCOUNT 级账单，组装成 {meta, instance_rows, group_rows,
