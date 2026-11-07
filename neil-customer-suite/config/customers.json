@@ -1,0 +1,147 @@
+{
+  "version": 2,
+  "timezone": "+08:00",
+  "credentials": {
+    "env": "ACCESS_TOKEN",
+    "fallback_file": "~/.qwenworkcn/secrets/fbi_token.json",
+    "note": "本仓库为 PUBLIC：token 字面值禁止入库。解析顺序 环境变量 ACCESS_TOKEN(JSON: fbi_token/fbi_assistant_id) → fallback_file → 报错退出"
+  },
+  "chatbi": {
+    "server_domain": "https://fbi.alibaba-inc.com",
+    "report_id": "616045",
+    "report_name": "公共云产品资源管理看板",
+    "component": "客户资源保有量明细",
+    "session_name": "neil-customer-radar",
+    "session_expire_hours": 1,
+    "poll_interval_seconds": 5,
+    "poll_timeout_seconds": 900,
+    "create_stagger_seconds": 8
+  },
+  "maas": {
+    "report_id": "1842553",
+    "report_name": "公共云事业部大模型专项看板",
+    "resource_type": "dataset",
+    "dataset_id": "76050019",
+    "dataset_name": "【MaaS】收入/调用/台数日数据",
+    "revenue_dashboard_id": "8057",
+    "revenue_dashboard_probe": "2026-11-07 实测：pro URL 不被 parseResourceIdByUrl 支持；dashboard/view/page.htm?id=8057 解析为 report；report 快速问数回空行（与 1842553 同构，背后 dataset 未知）。MaaS 收入继续由 dataset 76050019 覆盖，8057 仅作人工看板入口",
+    "range_days": 14
+  },
+  "traffic_metrics": [
+    { "key": "net_total", "label": "公网流量", "unit": "GB", "field": "公网络流量/GB" },
+    { "key": "net_down", "label": "公网下行流量", "unit": "GB", "field": "公网络下行流量/GB" },
+    { "key": "net_up", "label": "公网上行流量", "unit": "GB", "field": "公网上行流量/GB", "aliases": ["公网络上行流量/GB"] },
+    { "key": "line_out", "label": "专线流出流量", "unit": "GB", "field": "专线流出流量/GB" },
+    { "key": "line_in", "label": "专线流入流量", "unit": "GB", "field": "专线流入流量/GB" }
+  ],
+  "holding_metrics": [
+    { "key": "ecs_vcpu", "label": "ECS vCPU保有", "unit": "核", "field": "ecs_vcpu保有量/核" },
+    { "key": "ecs_instances", "label": "ECS实例数", "unit": "个", "field": "ecs_保有实例数/个" },
+    { "key": "oss_storage", "label": "OSS存储量", "unit": "TB", "field": "oss存储量/TB" },
+    { "key": "db_instances", "label": "数据库实例数", "unit": "个", "field": "数据库保有实例数/个" },
+    { "key": "db_cpu", "label": "数据库核数", "unit": "核", "field": "数据库cpu核数/核" },
+    { "key": "db_disk", "label": "数据库磁盘", "unit": "TB", "field": "数据库磁盘/TB" }
+  ],
+  "maas_metrics": [
+    { "key": "maas_gaap", "label": "MaaS日GAAP", "unit": "元", "field": "日收入" },
+    { "key": "maas_calls", "label": "MaaS日折算调用量", "unit": "tokens", "field": "日折算调用量" }
+  ],
+  "thresholds": {
+    "net_wow_pct": 30.0,
+    "net_sustain_days": 3,
+    "line_out_drop_pct": 50.0,
+    "new_product_confirm_days": 2,
+    "stop_confirm_days": 3,
+    "maas_wow_pct": 30.0,
+    "gate_tolerance": 0.05
+  },
+  "alidocs": {
+    "overview_node": "gwva2dxOW4vRkd9DUnz55vGaJbkz3BRL",
+    "overview_name": "客户总览",
+    "customer_list_node": "2Amq4vjg89jyZdNnCYbrEqn4W3kdP0wQ",
+    "customer_list_note": "人工维护的客户清单表格（播种交叉核对源，2026-11-07 调研发现）"
+  },
+  "customers": [
+    {
+      "key": "haidilao",
+      "name": "海底捞",
+      "report_customer_name": "海鸿达(北京)餐饮管理有限公司",
+      "maas_cid": "110133",
+      "devata": { "cid": null, "uid": null, "account": null },
+      "dingtalk": {
+        "service_group_name": "海底捞企业支持顶级服务",
+        "service_group_cid": "cidgMyijbO61zaPBGdPuoFCMQ==",
+        "daily_doc_parent_node": "ZgpG2NdyVXRmQ0jgC5NNkdXL8MwvDqPk",
+        "customer_folder_node": "o14dA3GK8gQlkoYwckgyZ0RPV9ekBD76",
+        "subgroup_policy": "probe_then_fallback",
+        "auto_join_expected": true
+      },
+      "weekly_doc_node": "R1zknDm0WR6XzZ4LtzqMzQ1XWBQEx5rG",
+      "radar": { "daily_watch": true, "base_id": "R1zknDm0WR6XzZ4LtdeRxlOyWBQEx5rG", "snapshot_table_id": "ZbvsqbY", "events_table_id": "2GYzdku", "field_ids_file": "neil-customer-radar/config/field_ids_haidilao.json" },
+      "kunpeng": { "rules_file": null, "risks_file": null, "cross_links_file": null, "resource_groups": [] },
+      "notes": "《海底捞》服务周会；radar 试点客户（Base 落位校验首个）"
+    },
+    {
+      "key": "hesi",
+      "name": "合思",
+      "report_customer_name": "北京合思汇智信息技术有限公司",
+      "maas_cid": "138763",
+      "devata": { "cid": null, "uid": null, "account": null },
+      "dingtalk": {
+        "service_group_name": "北京合思企业级服务",
+        "service_group_cid": "cidV79T8cqbWyqrn02uYJknXw==",
+        "daily_doc_parent_node": "a9E05BDRVQRkezKGCZXXg4jzJ63zgkYA",
+        "customer_folder_node": "YQBnd5ExVEjea40qC6vyxOY1JyeZqMmz",
+        "subgroup_policy": "probe_then_fallback",
+        "auto_join_expected": true
+      },
+      "weekly_doc_node": "AR4GpnMqJzKpOoklFLQwL2bp8Ke0xjE3",
+      "radar": { "daily_watch": true, "base_id": null, "snapshot_table_id": null, "events_table_id": null },
+      "kunpeng": { "rules_file": null, "risks_file": null, "cross_links_file": null, "resource_groups": [] },
+      "notes": "《合思》服务周会"
+    },
+    {
+      "key": "qianlima",
+      "name": "千里马",
+      "report_customer_name": "北京千里马网信科技有限公司",
+      "maas_cid": "1085435",
+      "devata": { "cid": null, "uid": null, "account": null },
+      "dingtalk": {
+        "service_group_name": "北京千里马网信科技有限公司企业标准服务",
+        "service_group_cid": "cidOZrbnka30PZ0re4hShD2Jw==",
+        "daily_doc_parent_node": "Y1OQX0akWmzdBowLFNwwz7q2VGlDd3mE",
+        "customer_folder_node": "gvNG4YZ7Jnxop15OCAE1nDxNW2LD0oRE",
+        "subgroup_policy": "probe_then_fallback",
+        "auto_join_expected": true
+      },
+      "weekly_doc_node": "XPwkYGxZV347LdvpHpKbr42mJAgozOKL",
+      "radar": { "daily_watch": true, "base_id": null, "snapshot_table_id": null, "events_table_id": null },
+      "kunpeng": { "rules_file": null, "risks_file": null, "cross_links_file": null, "resource_groups": [] },
+      "notes": "《千里马》服务周会"
+    },
+    {
+      "key": "kunqi",
+      "name": "坤启",
+      "report_customer_name": "北京坤启无限科技有限公司",
+      "maas_cid": null,
+      "devata": { "cid": "1941872709", "uid": "1077748325118640", "account": "ubiquantvc.onaliyun.com" },
+      "dingtalk": {
+        "service_group_name": null,
+        "service_group_cid": null,
+        "daily_doc_parent_node": null,
+        "customer_folder_node": null,
+        "subgroup_policy": null,
+        "auto_join_expected": null
+      },
+      "weekly_doc_node": null,
+      "radar": { "daily_watch": true, "base_id": null, "snapshot_table_id": null, "events_table_id": null },
+      "kunpeng": {
+        "rules_file": null,
+        "risks_file": "neil-kunpeng-expert/internal/risks_kunqi.json",
+        "cross_links_file": "neil-kunpeng-expert/internal/cross_links_kunqi.json",
+        "resource_groups": ["enter-prod", "framia-prod", "game-prod", "concat-prod", "work-prod", "anycap-prod", "converge-prod", "infra-prod"]
+      },
+      "notes": "Converge AI；账单深钻/架构图已实测客户（references/customer-view-kunqi.md 口径优先于账单推断）；report_customer_name 待 616045 播种核对"
+    }
+  ]
+}
