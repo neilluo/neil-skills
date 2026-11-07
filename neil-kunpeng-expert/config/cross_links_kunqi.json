@@ -1,0 +1,14 @@
+[
+  {"from": "enter_compute_prod-coding-agent", "to": "shared_data_adbpg", "label": "会话/记忆读写", "kind": "data"},
+  {"from": "enter_compute_prod-coding-agent", "to": "shared_ai_ws", "label": "代码模型 kimi-k2.7-code / qwen3.7-max", "kind": "ai"},
+  {"from": "enter_compute_prod-coding-agent", "to": "enter_compute_supabase-pool", "label": "生成应用的后端 BaaS", "kind": "data"},
+  {"from": "framia_compute_prod-video-agent", "to": "shared_ai_ws", "label": "wan3.0 / wan2.7 / happyhorse-1.1", "kind": "ai"},
+  {"from": "framia_compute_prod-video-agent", "to": "shared_data_oss", "label": "成片入 OSS → CDN 分发", "kind": "data"},
+  {"from": "game_compute_prod-game-pmd", "to": "infra_msg_kafka", "label": "行为/支付日志流", "kind": "msg"},
+  {"from": "game_compute_prod-game-pmd", "to": "game_data_mongo", "label": "存档", "kind": "data"},
+  {"from": "shared_access_apigw", "to": "enter_access_nlb-pub-app", "label": "路由到 Enter", "kind": "data"},
+  {"from": "shared_access_apigw", "to": "game_access_nlb-pri-gateway", "label": "路由到 Combos", "kind": "data"},
+  {"from": "infra_ana_dts", "to": "shared_data_adbpg", "label": "RDS→ADBPG 同步(micro)", "kind": "data"},
+  {"from": "game_data_rocketmq", "to": "infra_ana_maxcompute", "label": "游戏分析数仓", "kind": "data"},
+  {"from": "shared_ai_ws", "to": "shared_data_memory-pool", "label": "长记忆 sas-/agdb-", "kind": "ai"}
+]
