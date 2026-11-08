@@ -5,7 +5,8 @@
 > arch.json 契约文档 [docs/arch_schema.md](docs/arch_schema.md) 随本 skill 落地，是唯一接口，
 > 改字段前先在契约改、两侧（aggregate 产出 / 渲染消费）同步。
 > 下列条文原为 neil-kunpeng-expert AGENTS.md 第 10-13（Excalidraw 渲染）、
-> 第 16-22（架构组织与渲染 v2 / 对客脱敏），拆分后归此，重编号为 1-11。
+> 第 16-22（架构组织与渲染 v2 / 对客脱敏），拆分后归此并重编号为 1-12；
+> 其中第 8（legacy 未对齐 v2）、第 12（两份 fixture 各喂各的契约）是 2026-11-08 实测新增。
 
 ## 架构组织与渲染（v2，2026-11-05 用户拍板）
 1. 架构图主渲染器是 render_arch_html.py（单文件 HTML）；excalidraw 渲染器降级为 legacy 可编辑源，仅按需使用。
