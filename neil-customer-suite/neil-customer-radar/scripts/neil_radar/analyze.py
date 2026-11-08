@@ -17,19 +17,30 @@ def _plus_days(date_str, n):
     return d.strftime("%Y%m%d")
 
 
-def series_from_snapshots(snapshots, customer_key):
+def series_from_snapshots(snapshots, customer_key, maas_cid=None):
     """{metric: {stat_date: value}}；traffic+holdings 按 customer_key、maas 按 maas_cid。
     None 值不覆盖已有真实值（14 天窗口重叠时后快照缺行不得抹掉前快照数据，
-    review 2026-11-07 P1-9）；maas 行键已是 maas_gaap/maas_calls，禁再加前缀。"""
+    review 2026-11-07 P1-9）；maas 行键已是 maas_gaap/maas_calls，禁再加前缀。
+
+    maas 段的身份键是 maas_cid（如 110133），与 customer_key（如 haidilao）不是同一命名空间；
+    曾误用 customer_key 去比 maas_cid 导致 maas series 恒空、detect_maas_trend 从不产出信号
+    （review 2026-11-08 B1）。maas_cid 为空则 maas 段无数据（属预期，如 kunqi 无 maas_cid）。"""
     out = {m: {} for m in METRIC_KEYS}
     out["maas_gaap"], out["maas_calls"] = {}, {}
     for snap in snapshots:
         if snap.get("meta", {}).get("schema_version") != SCHEMA_VERSION:
             continue
         for section in ("traffic", "holdings", "maas"):
-            id_key = "maas_cid" if section == "maas" else "customer_key"
+            if section == "maas":
+                if not maas_cid:
+                    continue
+                want = maas_cid
+                id_key = "maas_cid"
+            else:
+                want = customer_key
+                id_key = "customer_key"
             for row in snap.get(section, []):
-                if row.get(id_key) != customer_key:
+                if row.get(id_key) != want:
                     continue
                 for key, val in row.items():
                     if key in ("customer_key", "report_customer_name",
@@ -103,7 +114,12 @@ def _event(etype, level, metric, start_date, evidence):
 
 def detect_net_anomaly(series, thresholds):
     """公网 7 日均值环比 |Δ|≥pct 且连续 sustain 天同向（符号一致，review P2-13）；
-    专线流出跌>50%/归零=P1。run==sustain 触发一次后冷却，防同信号重复铸事件。"""
+    专线流出跌>50%/归零=P1。run==sustain 触发一次后冷却，防同信号重复铸事件。
+
+    等级按**方向**判定（review 2026-11-08 B3）：suite AGENTS.md 第13条口径是
+    「专线流出 7 日均值跌 >50% 或归零 = P1 迁移疑似」，上涨不是迁移信号。
+    曾因 level 恒取 `"P1" if is_p1`，line_out 上涨 500% 也被判 P1 → 误推 IM 假迁移告警。
+    现改为：仅当 line_out 实际跌超 drop（含归零，delta=-1）才 P1，其余异动一律 P2。"""
     events = []
     pct = thresholds.get("net_wow_pct", 30.0) / 100.0
     sustain = thresholds.get("net_sustain_days", 3)
@@ -118,7 +134,9 @@ def detect_net_anomaly(series, thresholds):
                 run, signs, seg_start, emitted = 0, [], None, False
                 continue
             delta = (cur - prev) / prev
-            hit = abs(delta) >= pct or (is_p1 and delta <= -drop)
+            # 迁移疑似只对「跌」成立；归零时 cur=0 → delta=-1 亦满足
+            is_migration_drop = is_p1 and delta <= -drop
+            hit = abs(delta) >= pct or is_migration_drop
             same = not signs or (signs[-1] > 0) == (delta > 0)
             if hit and same:
                 run += 1
@@ -131,9 +149,15 @@ def detect_net_anomaly(series, thresholds):
             # review 2026-11-07 P2-14）；段被非异动日打断后重新计段
             if run == sustain and not emitted:
                 start = _plus_days(d, -(sustain - 1))
-                events.append(_event("net_anomaly", "P1" if is_p1 else "P2", key, start,
-                                       f"{key} 7日均值连续 {sustain} 天同向环比 |Δ|≥{pct:.0%}，"
-                                       f"{start}~{d} 当期均值 {cur:.1f} vs 前期 {prev:.1f}"))
+                level = "P1" if is_migration_drop else "P2"
+                reason = ("疑似迁移（跌超 "
+                          f"{drop:.0%}）" if is_migration_drop
+                          else f"环比 |Δ|≥{pct:.0%}")
+                direction = "↓" if delta < 0 else "↑"
+                events.append(_event("net_anomaly", level, key, start,
+                                       f"{key} 7日均值连续 {sustain} 天同向{direction} {reason}，"
+                                       f"{start}~{d} 当期均值 {cur:.1f} vs 前期 {prev:.1f}"
+                                       f"（环比 {delta:+.0%}）"))
                 emitted = True
     return events
 
@@ -175,7 +199,10 @@ def detect_data_gap(snapshots, customer, run_date):
 
 
 def analyze_customer(customer, snapshots, thresholds, run_date=""):
-    series = series_from_snapshots(snapshots, customer["key"])
+    # maas 段身份键是 maas_cid 而非 customer_key（review 2026-11-08 B1）；
+    # 与 store.merged_by_date 的匹配口径保持一致，否则 MaaS 趋势信号永远空转。
+    series = series_from_snapshots(snapshots, customer["key"],
+                                   maas_cid=customer.get("maas_cid"))
     events = (detect_new_stop(series, thresholds) + detect_net_anomaly(series, thresholds)
               + detect_maas_trend(series, thresholds))
     if customer.get("radar", {}).get("daily_watch"):

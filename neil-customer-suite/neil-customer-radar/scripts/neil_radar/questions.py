@@ -108,13 +108,31 @@ def _norm_cid(raw):
     return text
 
 
-def parse_grouped_rows(rows, metric_fields, customer_map, cid_mode=False, fixed_key=None):
+def _row_is_total(row, names):
+    """整行任一文本值命中合计/小计词表即判为合计行（review 2026-11-08 B4）。
+
+    降级逐客户问数时回行常**没有客户列**，此时无法靠 cust_col 判定合计行；
+    改为扫描全行字符串值，命中 TOTAL_ROW_NAMES 即丢弃，避免把全网合计写成某客户值。"""
+    for name in names:
+        v = row.get(name)
+        if isinstance(v, str) and v.strip() in TOTAL_ROW_NAMES:
+            return True
+    return False
+
+
+def parse_grouped_rows(rows, metric_fields, customer_map, cid_mode=False, fixed_key=None,
+                       fixed_name=None):
     """回行 → (records, unknown, missing_cols)。records 每行 {customer_key|maas_cid,
     report_customer_name, stat_date, <metric_key>: float|None}。
-    metric_fields: [(key, field)]；列名归一精确匹配 field（禁子串兜底）。
-    fixed_key：降级逐客户问数（回行无客户列）时把全部行归到该 key。
+    metric_fields: [(key, field)] 或 [(key, field, aliases)]；列名归一精确匹配 field，
+    别名走 aliases（禁子串兜底）。
+    fixed_key：降级逐客户问数（回行无客户列）时把行归到该 key；
+    fixed_name：该客户的**报表真名**，用于填 report_customer_name，
+      禁用 fixed_key（customer_key 如 "haidilao"）污染客户名字段（review 2026-11-08 B4）。
     合计/小计行直接丢弃（review P1-5：进 unknown 会污染对账门求和）。
-    列名取全行并集（多 sqlDatas 块拼接时 rows[0] 不代表全部块，review P1-6）。"""
+    列名取全行并集（多 sqlDatas 块拼接时 rows[0] 不代表全部块，review P1-6）。
+    **输出保证每 (身份键, stat_date) 唯一 record**：ChatBI 常把同一格的不同指标拆成多个
+    稀疏行返回，此处做值级合并（各指标取首个非 None 值），禁逐行 append（review B5/B8）。"""
     if not rows:
         return [], [], []
     names = []
@@ -130,7 +148,26 @@ def parse_grouped_rows(rows, metric_fields, customer_map, cid_mode=False, fixed_
     col_of = {m[1]: pick_metric_col(names, m[1], m[2] if len(m) > 2 else ())
               for m in metric_fields}
     missing_cols = [m[1] for m in metric_fields if not col_of[m[1]]]
-    records, unknown = [], []
+    # 值级合并（review 2026-11-08 B5/B8 根因）：ChatBI 分组问数常把同(客户,统计日)的
+    # 不同指标**拆成多个稀疏行**返回（实测一行只带 oss、另一行只带 ecs_vcpu…），
+    # 逐行 append 会：①records 膨胀（实测 holdings 172 行/应 60）②unknown 暴增（1202/应 338）
+    # ③gate 分子后写覆盖丢真值 ④缺行补问按「行存在」误判已补齐。
+    # 合并口径：同 (身份键, stat_date) 收敛成一条 record，各指标取**首个非 None 值**
+    # （非 None 优先，禁 None 覆盖真值；与 analyze.series_from_snapshots 同口径）。
+    # 实测合并后 hesi 20261026 六指标与报表真值逐一吻合（2766/682/995/302/2996/723）。
+    rec_by_key, unk_by_key = {}, {}
+    rec_order, unk_order = [], []
+
+    def _merge_into(store, order, ident, rec):
+        prev = store.get(ident)
+        if prev is None:
+            store[ident] = rec
+            order.append(ident)
+            return
+        for m in metric_fields:
+            if prev.get(m[0]) is None and rec.get(m[0]) is not None:
+                prev[m[0]] = rec[m[0]]
+
     for row in rows:
         sdate = None
         for col in date_cols:
@@ -142,22 +179,25 @@ def parse_grouped_rows(rows, metric_fields, customer_map, cid_mode=False, fixed_
         if cid_mode:
             cid = _norm_cid(row.get(cid_col))
             rec = {"maas_cid": cid, "report_customer_name": cid, "stat_date": sdate}
+            ident = (cid, sdate)
         else:
             cname = str(row.get(cust_col) or "").strip() if cust_col else ""
-            if cname in TOTAL_ROW_NAMES:
+            # 有客户列时按列值判合计；无客户列（降级场景）时扫全行，防把合计当客户值
+            if cname in TOTAL_ROW_NAMES or (not cname and _row_is_total(row, names)):
                 continue
             key = customer_map.get(cname) if cname else fixed_key
             rec = {"customer_key": key,
-                   "report_customer_name": cname or (fixed_key or ""), "stat_date": sdate}
-            if not key:
-                # unknown 行保留指标值：对账门需全量行求和（config 内+外），存储/分析只消费 config 内
-                for m in metric_fields:
-                    col = col_of.get(m[1])
-                    rec[m[0]] = parse_number(row.get(col)) if col else None
-                unknown.append(rec)
-                continue
+                   "report_customer_name": cname or fixed_name or "",
+                   "stat_date": sdate}
+            ident = (key if key else cname, sdate)
         for m in metric_fields:
             col = col_of.get(m[1])
             rec[m[0]] = parse_number(row.get(col)) if col else None
-        records.append(rec)
+        if not cid_mode and not rec.get("customer_key"):
+            # unknown 行保留指标值：对账门需全量行求和（config 内+外），存储/分析只消费 config 内
+            _merge_into(unk_by_key, unk_order, ident, rec)
+            continue
+        _merge_into(rec_by_key, rec_order, ident, rec)
+    records = [rec_by_key[i] for i in rec_order]
+    unknown = [unk_by_key[i] for i in unk_order]
     return records, unknown, missing_cols
