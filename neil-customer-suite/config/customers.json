@@ -96,7 +96,7 @@
         "auto_join_expected": true
       },
       "weekly_doc_node": "AR4GpnMqJzKpOoklFLQwL2bp8Ke0xjE3",
-      "radar": { "daily_watch": true, "base_id": null, "snapshot_table_id": null, "events_table_id": null },
+      "radar": { "daily_watch": true, "base_id": "YQBnd5ExVEjea40qCae67bBgJyeZqMmz", "snapshot_table_id": "wz9od9C", "events_table_id": "9snIhJq", "field_ids_file": "neil-customer-radar/config/field_ids_hesi.json" },
       "kunpeng": { "rules_file": null, "risks_file": null, "cross_links_file": null, "resource_groups": [] },
       "notes": "《合思》服务周会"
     },
@@ -115,7 +115,7 @@
         "auto_join_expected": true
       },
       "weekly_doc_node": "XPwkYGxZV347LdvpHpKbr42mJAgozOKL",
-      "radar": { "daily_watch": true, "base_id": null, "snapshot_table_id": null, "events_table_id": null },
+      "radar": { "daily_watch": true, "base_id": "EpGBa2Lm8aZxe5myCR4zvmnpWgN7R35y", "snapshot_table_id": "VURpkwa", "events_table_id": "9EQsPNT", "field_ids_file": "neil-customer-radar/config/field_ids_qianlima.json" },
       "kunpeng": { "rules_file": null, "risks_file": null, "cross_links_file": null, "resource_groups": [] },
       "notes": "《千里马》服务周会"
     },
@@ -134,7 +134,7 @@
         "auto_join_expected": null
       },
       "weekly_doc_node": null,
-      "radar": { "daily_watch": true, "base_id": null, "snapshot_table_id": null, "events_table_id": null },
+      "radar": { "daily_watch": true, "base_id": "YMyQA2dXW7gYo6Mzcdy1pxnkWzlwrZgb", "snapshot_table_id": "6TCU0aX", "events_table_id": "ewUgayu", "field_ids_file": "neil-customer-radar/config/field_ids_kunqi.json" },
       "kunpeng": {
         "rules_file": null,
         "risks_file": "neil-kunpeng-billing/internal/risks_kunqi.json",

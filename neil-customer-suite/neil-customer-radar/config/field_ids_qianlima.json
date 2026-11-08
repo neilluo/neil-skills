@@ -1,0 +1,29 @@
+{
+  "base_id": "EpGBa2Lm8aZxe5myCR4zvmnpWgN7R35y",
+  "snapshot_table_id": "VURpkwa",
+  "events_table_id": "9EQsPNT",
+  "note": "field get 回读于 2026-11-08（+base-bootstrap 建于客户总览节点 gwva2dxOW4vRkd9DUnz55vGaJbkz3BRL，drive info 校验落位）；换 Base 须重新回读",
+  "fields": {
+    "快照日期": "RLF08R1",
+    "公网流量GB": "AMj854q",
+    "公网下行GB": "RkCSbhY",
+    "公网上行GB": "ZUchVXL",
+    "专线流出GB": "sZ1DZvT",
+    "专线流入GB": "l5HqHes",
+    "ECSvCPU核": "wcRVPbf",
+    "ECS实例数": "lDLE7sW",
+    "OSS存储TB": "ldUyvkM",
+    "DB实例数": "ngPetSn",
+    "DB核数": "NPJ8iW2",
+    "DB磁盘TB": "x7cAN6O",
+    "MaaS日GAAP元": "ne4ch5C",
+    "MaaS日调用量": "ZmOuGEL",
+    "事件ID": "yWGH32C",
+    "事件日期": "TXkkFaP",
+    "事件类型": "aETkM9r",
+    "级别": "rkpGqKE",
+    "目标指标": "KptZpkL",
+    "证据": "Yl5EiTL",
+    "状态": "og1pdoW"
+  }
+}
